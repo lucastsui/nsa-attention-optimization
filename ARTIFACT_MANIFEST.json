@@ -1,5 +1,5 @@
 {
-  "created_utc": "2026-09-22T14:46:04.721246+00:00",
+  "created_utc": "2026-09-22T15:17:05.184980+00:00",
   "note": "Repository and nsa-attention-portfolio.zip files; .git and local runtime paths/caches are excluded.",
   "files": {
     ".gitattributes": "da3f721647df5824fb449cd00f2c04fba292899719f758da1d53c6afad6e22e4",
@@ -12,7 +12,7 @@
     "LICENSE": "7fe6332b2722f635c83f799d04c6c848619e0474946a8a5d3255c88789d66a96",
     "PRIOR_WORK_AND_MODEL.md": "b8eb1dc847f1d3e1cfd9197f7be51fbd4217e6d512a34c825c015ab9416d704f",
     "PROFILE_RESULTS.md": "127116875a6447ee59467b6170c12680ac5a854e3235ec3aec591c4d873e44cb",
-    "README.md": "39f939928602573b4a5ebfb009c63d0a4020a2e2df20fac0b1ba79dd968d9259",
+    "README.md": "33248e95c90c405e2f9a12dc659f6c44c13391aa06c33559ad0b138bec3de91d",
     "REPRODUCIBILITY.md": "f1403b010dd4f4aee683106e8b21e11c1d561dd0719aeaea5c7acf1c56db8e07",
     "SANITIZER_RESULTS.md": "b6e585b5495cf4a8c7bf97b1e14605e7c426d7e7a16eea399df2923ba373b6fd",
     "analyze_experiments.py": "9eb45cb23a20d67bf463a342e5ea70a13f8aff20c452cd9af7c8cd2b4c995e6b",

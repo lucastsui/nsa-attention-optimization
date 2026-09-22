@@ -2,15 +2,15 @@
 
 ## Abstract
 
-This project optimizes the **forward selected-attention branch of Native Sparse
-Attention (NSA)** in a pinned FLA Triton implementation. The change delays loading
+This project optimizes the forward selected-attention branch of Native Sparse
+Attention (NSA) in a pinned FLA Triton implementation. The change delays loading
 the value tile until attention probabilities have been computed, shortening its
 live range while preserving the selected blocks and attention arithmetic. On an
-RTX 5090 **Laptop** GPU with PyTorch 2.8.0 and Triton 3.4.0, the profiled kernel's
+RTX 5090 Laptop GPU with PyTorch 2.8.0 and Triton 3.4.0, the profiled kernel's
 shared memory falls from 36 to 22 KiB per thread block and registers from 152 to
 128 per thread. Synchronized, batched forward measurements against the unchanged
-original with a 12-configuration tuning search show **22.1–31.5% higher
-selected-branch throughput** across nine synthetic D128/block64 workloads in two
+original with a 12-configuration tuning search show 22.1–31.5% higher
+selected-branch throughput across nine synthetic D128/block64 workloads in two
 fresh-process sessions. Validation includes 166 passing numerical comparisons
 against an independent CPU FP64 reference and all four Compute Sanitizer modes
 passing ten cases each. The fixed four-warp candidate regresses on smaller
@@ -21,13 +21,13 @@ full-model performance has not been measured.
 
 ## 1. Attention mechanism
 
-Attention compares a query **Q** with keys **K**, turns the resulting scores into
-weights using softmax, and uses those weights to combine values **V**. Dense
+Attention compares a query Q with keys K, turns the resulting scores into
+weights using softmax, and uses those weights to combine values V. Dense
 attention considers every allowed key. [Native Sparse Attention](https://arxiv.org/abs/2502.11089)
 combines three branches: attention over compressed blocks, attention over selected
 blocks at token resolution, and attention over a local sliding window.
 
-This project studies the **selected branch**. For each query, it visits chosen
+This project studies the selected branch. For each query, it visits chosen
 blocks of K and V and applies the causal mask, so future tokens cannot contribute.
 The optimization preserves the selected indices, mask, score scaling, softmax,
 and weighted sum. Compression, block selection, and the sliding-window branch
@@ -129,7 +129,7 @@ The final study compares three providers using the same allocation/launch wrappe
 | `fla_tuned` | Unchanged original | Searches 1/2/4/8 warps × 1/2/3 stages per workload |
 | `late_v_w4` | Delayed V load | Four warps, three stages |
 
-**The headline improvement is relative to `fla_tuned`.** Its broader search helps
+The headline improvement is relative to `fla_tuned`. Its broader search helps
 test whether ordinary launch tuning can account for the gain. The newer integrated
 FLA package was inspected separately but was not benchmarked; this project does
 not establish the fastest available implementation.
@@ -145,7 +145,7 @@ Inputs and indices are already on the GPU in native layout. Synchronized batch
 wall time includes eager dispatch, native output allocation, and selected-attention
 forward execution. It excludes input generation, transfers, layout conversion,
 compression/selection, compilation, and autotuning. Identical inputs are reused
-without explicit cache flushing: this is a **warm-cache** measurement.
+without explicit cache flushing: this is a warm-cache measurement.
 
 The reported latency is the median per-invocation batch time. For a fixed workload:
 
@@ -165,7 +165,7 @@ Timing requires successful correctness gates with matching input and source hash
 An independent CPU FP64 reference computes dense attention with the same selected
 blocks and causal mask, starting from the same quantized inputs.
 
-- **166 numerical comparisons passed across 52 distinct input configurations.**
+- 166 numerical comparisons passed across 52 distinct input configurations.
   These include multiple providers, seeds, dimensions, block sizes, head groups,
   FP16/BF16, and packed sequences.
 - Checked elements satisfy `abs(error) <= 0.01 + 0.01 * abs(reference)`;
@@ -173,7 +173,7 @@ blocks and causal mask, starting from the same quantized inputs.
   error across these reports is `0.00241723`.
 - Small cases check every query row. Large cases check up to 24 deterministic rows
   plus finiteness of all outputs. Two analytic tests check the CPU reference itself.
-- Compute Sanitizer **memcheck, racecheck, synccheck, and initcheck** each pass ten
+- Compute Sanitizer memcheck, racecheck, synccheck, and initcheck each pass ten
   cases, including the 8K target, with exit code zero and zero reported errors.
   Their 40 numerical rechecks are separate from the 166 comparisons above.
 
@@ -187,7 +187,7 @@ of the large output tensors.
 
 ## 4. Results and limitations
 
-Times are milliseconds; each pair is **tuned original / candidate**. Gains are
+Times are milliseconds; each pair is tuned original / candidate. Gains are
 calculated from unrounded medians.
 
 | Tokens | Selection | Session 1 time | Gain | Session 2 time | Gain |
