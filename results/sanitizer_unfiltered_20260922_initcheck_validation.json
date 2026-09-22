@@ -1,0 +1,438 @@
+{
+  "timestamp_utc": "2026-09-22T03:08:49.337676+00:00",
+  "sources": {
+    "nsa-triton": {
+      "commit": "9bea856c911ebf263be88d797fb28458f82f1d94",
+      "modified": false
+    },
+    "fla-nsa": {
+      "commit": "bd67af59b90afa34b25f61d2922e612d10dba3bd",
+      "modified": false
+    },
+    "fsa": {
+      "commit": "1325e8dbf18e430753e2d5e41cab9c262250ee7f",
+      "modified": true,
+      "patch": "patches/fsa-pointer.patch",
+      "patch_sha256": "bd4b7984ff973e788206e174134b5483f7c400583517af5ffdba51b1c2ecafdd"
+    },
+    "fla-nsa/3rdparty/flash-linear-attention": {
+      "commit": "7a21647cf63d8ac396947300b8777767067e6269",
+      "modified": false
+    },
+    "late_v_candidate": {
+      "source": "candidates/late_v.py",
+      "sha256": "b5cb0c8dd4e06b2a677dc2220ce4faa22cbff4167089b4ca556a76d1578a65ce",
+      "patch": "patches/fla-late-v.patch"
+    },
+    "experiment_runtime": {
+      "torchinductor_compile_threads": "1"
+    }
+  },
+  "torch": "2.8.0+cu128",
+  "triton": "3.4.0",
+  "tolerances": {
+    "atol": 0.01,
+    "rtol": 0.01,
+    "relative_l2_max": 0.01
+  },
+  "seed": "per case; default 17",
+  "reference": "Independent CPU FP64 dense masked attention",
+  "cases": [
+    {
+      "case": {
+        "name": "edge0_s29",
+        "lengths": [
+          129
+        ],
+        "group": 16,
+        "kv_heads": 1,
+        "head_dim": 64,
+        "block_size": 64,
+        "selected_blocks": 1,
+        "pattern": "random",
+        "seed": 29
+      },
+      "provider": "late_v_w4",
+      "input_sha256": "67cd53c7486e49c6b65e923488b767226ec530ddf6ebe48d1def92233c23644f",
+      "checked_rows": "all",
+      "route": "late_v_w4",
+      "all_outputs_finite": true,
+      "max_abs_error": 0.00776675238034974,
+      "relative_l2": 0.0017699216071991046,
+      "checked_elements": 132096,
+      "elementwise_pass": true,
+      "status": "passed",
+      "compiled_resources": {
+        "kernel_name": "parallel_nsa_fwd_kernel",
+        "num_warps": 4,
+        "num_stages": 3,
+        "shared_bytes": 10240,
+        "registers_per_thread": 51,
+        "spilled_registers": 0,
+        "compiled_hash": "14d28a9cf67e30327e7c36cdd0b8aa8d76a2b039648b5f751e882684c0459815"
+      }
+    },
+    {
+      "case": {
+        "name": "edge1_s29",
+        "lengths": [
+          193
+        ],
+        "group": 16,
+        "kv_heads": 1,
+        "head_dim": 96,
+        "block_size": 64,
+        "selected_blocks": 4,
+        "pattern": "random",
+        "seed": 29,
+        "value_dim": 80
+      },
+      "provider": "late_v_w4",
+      "input_sha256": "19d8520e5269b9badcc152a76363a9d5af297a6836d16d6bb19f79ddd7a18952",
+      "checked_rows": "all",
+      "route": "late_v_w4",
+      "all_outputs_finite": true,
+      "max_abs_error": 0.008796106141544247,
+      "relative_l2": 0.0022983486564238102,
+      "checked_elements": 247040,
+      "elementwise_pass": true,
+      "status": "passed",
+      "compiled_resources": {
+        "kernel_name": "parallel_nsa_fwd_kernel",
+        "num_warps": 4,
+        "num_stages": 3,
+        "shared_bytes": 22528,
+        "registers_per_thread": 132,
+        "spilled_registers": 0,
+        "compiled_hash": "dc68304c863a7cfc6fdaab2cbbdab86e8f2b742f17a5cd735a149af435bfb3a2"
+      }
+    },
+    {
+      "case": {
+        "name": "edge2_s29",
+        "lengths": [
+          257
+        ],
+        "group": 16,
+        "kv_heads": 1,
+        "head_dim": 256,
+        "block_size": 64,
+        "selected_blocks": 2,
+        "pattern": "random",
+        "seed": 29,
+        "value_dim": 128
+      },
+      "provider": "late_v_w4",
+      "input_sha256": "d2b9371031a3d0891405542a2284717e5166a327cf6609988a91a862dbf68224",
+      "checked_rows": "all",
+      "route": "late_v_w4",
+      "all_outputs_finite": true,
+      "max_abs_error": 0.00764305390383635,
+      "relative_l2": 0.0019648838073436903,
+      "checked_elements": 526336,
+      "elementwise_pass": true,
+      "status": "passed",
+      "compiled_resources": {
+        "kernel_name": "parallel_nsa_fwd_kernel",
+        "num_warps": 4,
+        "num_stages": 3,
+        "shared_bytes": 40960,
+        "registers_per_thread": 162,
+        "spilled_registers": 0,
+        "compiled_hash": "0ba47d9d03d2391c1f641f22572feb44e33ff442df01a5e64e5a56f2d2324b2b"
+      }
+    },
+    {
+      "case": {
+        "name": "edge3_s29",
+        "lengths": [
+          129
+        ],
+        "group": 16,
+        "kv_heads": 1,
+        "head_dim": 128,
+        "block_size": 64,
+        "selected_blocks": 2,
+        "pattern": "random",
+        "seed": 29,
+        "value_dim": 256
+      },
+      "provider": "late_v_w4",
+      "input_sha256": "1b0c47bbcfcd4721a6583d1eef92129384c128e1c0896e973caa7700ce7aecea",
+      "checked_rows": "all",
+      "route": "late_v_w4",
+      "all_outputs_finite": true,
+      "max_abs_error": 0.008921234661044775,
+      "relative_l2": 0.0023306295889050418,
+      "checked_elements": 528384,
+      "elementwise_pass": true,
+      "status": "passed",
+      "compiled_resources": {
+        "kernel_name": "parallel_nsa_fwd_kernel",
+        "num_warps": 4,
+        "num_stages": 3,
+        "shared_bytes": 38912,
+        "registers_per_thread": 184,
+        "spilled_registers": 0,
+        "compiled_hash": "cb822d426d2d90a95ed32c16ddbfee8ba97a62456e67e6708539825f17ad78c5"
+      }
+    },
+    {
+      "case": {
+        "name": "edge4_s29",
+        "lengths": [
+          31,
+          33,
+          65
+        ],
+        "group": 16,
+        "kv_heads": 1,
+        "head_dim": 64,
+        "block_size": 32,
+        "selected_blocks": 2,
+        "pattern": "random",
+        "seed": 29
+      },
+      "provider": "late_v_w4",
+      "input_sha256": "0b32f61f9a2b68545bfb5cfc99c66763dbc76828f56401c97b79a624ba9e75c0",
+      "checked_rows": "all",
+      "route": "late_v_w4",
+      "all_outputs_finite": true,
+      "max_abs_error": 0.00776675238034974,
+      "relative_l2": 0.0017960413017109767,
+      "checked_elements": 132096,
+      "elementwise_pass": true,
+      "status": "passed",
+      "compiled_resources": {
+        "kernel_name": "parallel_nsa_fwd_kernel",
+        "num_warps": 4,
+        "num_stages": 3,
+        "shared_bytes": 7168,
+        "registers_per_thread": 72,
+        "spilled_registers": 0,
+        "compiled_hash": "c732e0e28eb50b958228b074ae9099a1ea86124b76c3e1cc4bdab2c95ec254af"
+      }
+    },
+    {
+      "case": {
+        "name": "edge5_s29",
+        "lengths": [
+          127,
+          129
+        ],
+        "group": 16,
+        "kv_heads": 1,
+        "head_dim": 128,
+        "block_size": 128,
+        "selected_blocks": 2,
+        "pattern": "random",
+        "seed": 29
+      },
+      "provider": "late_v_w4",
+      "input_sha256": "3c71df7fbdd8ce8095e609af7f2c228e324778e617e3bcb2144d0d1670cc072f",
+      "checked_rows": "all",
+      "route": "late_v_w4",
+      "all_outputs_finite": true,
+      "max_abs_error": 0.010032202542095803,
+      "relative_l2": 0.002288727845425494,
+      "checked_elements": 524288,
+      "elementwise_pass": true,
+      "status": "passed",
+      "compiled_resources": {
+        "kernel_name": "parallel_nsa_fwd_kernel",
+        "num_warps": 4,
+        "num_stages": 3,
+        "shared_bytes": 40960,
+        "registers_per_thread": 187,
+        "spilled_registers": 0,
+        "compiled_hash": "8bc10d07b84a6f8fffeaa16e0a758045560acb639812c4aeabfbeb259e0eb9d2"
+      }
+    },
+    {
+      "case": {
+        "name": "edge6_s29",
+        "lengths": [
+          129
+        ],
+        "group": 32,
+        "kv_heads": 2,
+        "head_dim": 128,
+        "block_size": 64,
+        "selected_blocks": 4,
+        "pattern": "random",
+        "seed": 29
+      },
+      "provider": "late_v_w4",
+      "input_sha256": "81340b42af59c03778d33a4c32adb5beafbaec19eceb5850697a0e08edeff9cb",
+      "checked_rows": "all",
+      "route": "late_v_w4",
+      "all_outputs_finite": true,
+      "max_abs_error": 0.008895661323823578,
+      "relative_l2": 0.0023004471938249563,
+      "checked_elements": 1056768,
+      "elementwise_pass": true,
+      "status": "passed",
+      "compiled_resources": {
+        "kernel_name": "parallel_nsa_fwd_kernel",
+        "num_warps": 4,
+        "num_stages": 3,
+        "shared_bytes": 28672,
+        "registers_per_thread": 198,
+        "spilled_registers": 0,
+        "compiled_hash": "f7e8830c313c506c54ac23cd422345016c51b74676d130d386f02c672ad4b23a"
+      }
+    },
+    {
+      "case": {
+        "name": "edge7_s29",
+        "lengths": [
+          257
+        ],
+        "group": 16,
+        "kv_heads": 1,
+        "head_dim": 128,
+        "block_size": 64,
+        "selected_blocks": 8,
+        "pattern": "random",
+        "seed": 29,
+        "dtype": "fp16"
+      },
+      "provider": "late_v_w4",
+      "input_sha256": "7b0ad9292de1bf2949e1191487c6036cccf4e0c92f9dae6996c7d3e8db0df899",
+      "checked_rows": "all",
+      "route": "late_v_w4",
+      "all_outputs_finite": true,
+      "max_abs_error": 0.0012139813165381597,
+      "relative_l2": 0.00029433431845418033,
+      "checked_elements": 526336,
+      "elementwise_pass": true,
+      "status": "passed",
+      "compiled_resources": {
+        "kernel_name": "parallel_nsa_fwd_kernel",
+        "num_warps": 4,
+        "num_stages": 3,
+        "shared_bytes": 22528,
+        "registers_per_thread": 138,
+        "spilled_registers": 0,
+        "compiled_hash": "989cf7d7b31c5a2b2d1491d4bf9e9f36c94ee7089992a31816d846c132ea1b8b"
+      }
+    },
+    {
+      "case": {
+        "name": "n8192_random_s29",
+        "lengths": [
+          8192
+        ],
+        "group": 16,
+        "kv_heads": 4,
+        "selected_blocks": 16,
+        "pattern": "random",
+        "seed": 29,
+        "sampled": true
+      },
+      "provider": "late_v_w4",
+      "input_sha256": "d7aa7d6d7b5cc31db609697e8d2ffb624b9e5ff00ed7779fa31a9ddf55b02da2",
+      "checked_rows": [
+        0,
+        1,
+        63,
+        64,
+        65,
+        127,
+        128,
+        305,
+        511,
+        512,
+        529,
+        1023,
+        1024,
+        1247,
+        1421,
+        1699,
+        4095,
+        4096,
+        4728,
+        5633,
+        5666,
+        6437,
+        6807,
+        8191
+      ],
+      "route": "late_v_w4",
+      "all_outputs_finite": true,
+      "max_abs_error": 0.00884068018143358,
+      "relative_l2": 0.0015025783374223707,
+      "checked_elements": 196608,
+      "elementwise_pass": true,
+      "status": "passed",
+      "compiled_resources": {
+        "kernel_name": "parallel_nsa_fwd_kernel",
+        "num_warps": 4,
+        "num_stages": 3,
+        "shared_bytes": 22528,
+        "registers_per_thread": 128,
+        "spilled_registers": 0,
+        "compiled_hash": "7b0cc5902d3f3468b393bc76aef40bbbd261810af8a6f05cc8ac5a959cc67737"
+      }
+    },
+    {
+      "case": {
+        "name": "n8192_nsa_s29",
+        "lengths": [
+          8192
+        ],
+        "group": 16,
+        "kv_heads": 4,
+        "selected_blocks": 16,
+        "pattern": "nsa",
+        "seed": 29,
+        "sampled": true
+      },
+      "provider": "late_v_w4",
+      "input_sha256": "0923137002d91c622014ef6f77852e54f98cc7dbca8fbfe04c7492a983f9cb72",
+      "checked_rows": [
+        0,
+        1,
+        63,
+        64,
+        65,
+        127,
+        128,
+        305,
+        511,
+        512,
+        529,
+        1023,
+        1024,
+        1247,
+        1421,
+        1699,
+        4095,
+        4096,
+        4728,
+        5633,
+        5666,
+        6437,
+        6807,
+        8191
+      ],
+      "route": "late_v_w4",
+      "all_outputs_finite": true,
+      "max_abs_error": 0.00884068018143358,
+      "relative_l2": 0.001501635021764053,
+      "checked_elements": 196608,
+      "elementwise_pass": true,
+      "status": "passed",
+      "compiled_resources": {
+        "kernel_name": "parallel_nsa_fwd_kernel",
+        "num_warps": 4,
+        "num_stages": 3,
+        "shared_bytes": 22528,
+        "registers_per_thread": 128,
+        "spilled_registers": 0,
+        "compiled_hash": "7b0cc5902d3f3468b393bc76aef40bbbd261810af8a6f05cc8ac5a959cc67737"
+      }
+    }
+  ],
+  "status": "completed"
+}

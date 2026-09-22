@@ -1,0 +1,82 @@
+{
+  "verified_utc": "2026-09-22T03:15:36.416418+00:00",
+  "status": "passed",
+  "source": {
+    "nsa-triton": {
+      "commit": "9bea856c911ebf263be88d797fb28458f82f1d94",
+      "modified": false
+    },
+    "fla-nsa": {
+      "commit": "bd67af59b90afa34b25f61d2922e612d10dba3bd",
+      "modified": false
+    },
+    "fsa": {
+      "commit": "1325e8dbf18e430753e2d5e41cab9c262250ee7f",
+      "modified": true,
+      "patch": "patches/fsa-pointer.patch",
+      "patch_sha256": "bd4b7984ff973e788206e174134b5483f7c400583517af5ffdba51b1c2ecafdd"
+    },
+    "fla-nsa/3rdparty/flash-linear-attention": {
+      "commit": "7a21647cf63d8ac396947300b8777767067e6269",
+      "modified": false
+    },
+    "late_v_candidate": {
+      "source": "candidates/late_v.py",
+      "sha256": "b5cb0c8dd4e06b2a677dc2220ce4faa22cbff4167089b4ca556a76d1578a65ce",
+      "patch": "patches/fla-late-v.patch"
+    },
+    "experiment_runtime": {
+      "torchinductor_compile_threads": "1"
+    }
+  },
+  "tools": [
+    {
+      "tool": "memcheck",
+      "exit_code": 0,
+      "reported_errors": 0,
+      "checked_cases": 10,
+      "numerical_rechecks_passed": 10,
+      "log": "sanitizer_verified_20260922_memcheck.log",
+      "validation": "sanitizer_verified_20260922_memcheck_validation.json"
+    },
+    {
+      "tool": "racecheck",
+      "exit_code": 0,
+      "reported_errors": 0,
+      "checked_cases": 10,
+      "numerical_rechecks_passed": 10,
+      "log": "sanitizer_verified_20260922_racecheck.log",
+      "validation": "sanitizer_verified_20260922_racecheck_validation.json"
+    },
+    {
+      "tool": "synccheck",
+      "exit_code": 0,
+      "reported_errors": 0,
+      "checked_cases": 10,
+      "numerical_rechecks_passed": 10,
+      "log": "sanitizer_verified_20260922_synccheck.log",
+      "validation": "sanitizer_verified_20260922_synccheck_validation.json"
+    },
+    {
+      "tool": "initcheck",
+      "exit_code": 0,
+      "reported_errors": 0,
+      "checked_cases": 10,
+      "numerical_rechecks_passed": 10,
+      "log": "sanitizer_unfiltered_20260922_initcheck.log",
+      "validation": "sanitizer_unfiltered_20260922_initcheck_validation.json"
+    }
+  ],
+  "regenerated_selection_variants": [
+    {
+      "tool": "synccheck",
+      "case": "n8192_nsa_s29",
+      "input_sha256": "8aeee0cadbf4b6bf6657545024447d2c915d600137be4e3f9e19e0371c253250",
+      "original_input_sha256": "0923137002d91c622014ef6f77852e54f98cc7dbca8fbfe04c7492a983f9cb72",
+      "note": "Regenerated algorithm-selected workload; reference recomputed for the actual indices. This is not a timing-input substitution."
+    }
+  ],
+  "instrumentation_control": "passed; valid read clean, invalid read detected",
+  "scope": "Ten cases per tool, full launched grids. Memcheck/racecheck/synccheck filter for selected-forward kernels. Initcheck includes all kernels to track initialization through helper kernels and the selector.",
+  "numerical_rechecks": 40
+}

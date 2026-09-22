@@ -1,0 +1,1438 @@
+--------- -------------------------------------------------------------------------------------------------------------------------------
+File Name /mnt/c/Users/Owner/Documents/Codex/2026-09-19/fe/work/nsa/repos/fla-nsa/native_sparse_attention/ops/parallel.py                
+--------- -------------------------------------------------------------------------------------------------------------------------------
+Line No   Source                                                                                                                         
+1         # -*- coding: utf-8 -*-                                                                                                        
+2         # Copyright (c) 2023-2025, Songlin Yang, Yu Zhang                                                                              
+3                                                                                                                                        
+4         import warnings                                                                                                                
+5         from typing import Optional, Union                                                                                             
+6                                                                                                                                        
+7         import torch                                                                                                                   
+8         import triton                                                                                                                  
+9         import triton.language as tl                                                                                                   
+10        from einops import rearrange                                                                                                   
+11                                                                                                                                       
+12        from fla.ops.common.utils import prepare_chunk_indices, prepare_chunk_offsets, prepare_lens, prepare_token_indices             
+13        from fla.ops.utils import mean_pooling                                                                                         
+14        from fla.utils import autocast_custom_bwd, autocast_custom_fwd, contiguous                                                     
+15        from native_sparse_attention.ops.utils import _bitonic_merge                                                                   
+16                                                                                                                                       
+17        try:                                                                                                                           
+18            from flash_attn import flash_attn_func, flash_attn_varlen_func                                                             
+19        except ImportError:                                                                                                            
+20            warnings.warn(                                                                                                             
+21                "Flash Attention is not installed. Please install it via `pip install flash-attn --no-build-isolation`",               
+22                category=ImportWarning                                                                                                 
+23            )                                                                                                                          
+24            flash_attn_func = None                                                                                                     
+25                                                                                                                                       
+26                                                                                                                                       
+27        @triton.heuristics({                                                                                                           
+28            'USE_OFFSETS': lambda args: args['offsets'] is not None                                                                    
+29        })                                                                                                                             
+30        @triton.autotune(                                                                                                              
+31            configs=[                                                                                                                  
+32                triton.Config({}, num_warps=num_warps)                                                                                 
+33                for num_warps in [1, 2, 4]                                                                                             
+34            ],                                                                                                                         
+35            key=['BS', 'BK', 'BV'],                                                                                                    
+36        )                                                                                                                              
+37        @triton.jit                                                                                                                    
+38        def parallel_nsa_compression_fwd_kernel(                                                                                       
+39            q,                                                                                                                         
+40            k,                                                                                                                         
+41            v,                                                                                                                         
+42            o,                                                                                                                         
+43            lse,                                                                                                                       
+44            scale,                                                                                                                     
+45            offsets,                                                                                                                   
+46            token_indices,                                                                                                             
+47            chunk_offsets,                                                                                                             
+48            T,                                                                                                                         
+49            H: tl.constexpr,                                                                                                           
+50            HQ: tl.constexpr,                                                                                                          
+51            G: tl.constexpr,                                                                                                           
+52            K: tl.constexpr,                                                                                                           
+53            V: tl.constexpr,                                                                                                           
+54            BC: tl.constexpr,                                                                                                          
+55            BS: tl.constexpr,                                                                                                          
+56            BK: tl.constexpr,                                                                                                          
+57            BV: tl.constexpr,                                                                                                          
+58            USE_OFFSETS: tl.constexpr,                                                                                                 
+59        ):                                                                                                                             
+60            i_t, i_v, i_bh = tl.program_id(0), tl.program_id(1), tl.program_id(2)                                                      
+61            i_b, i_h = i_bh // H, i_bh % H                                                                                             
+62                                                                                                                                       
+63            if USE_OFFSETS:                                                                                                            
+64                i_n, i_t = tl.load(token_indices + i_t * 2).to(tl.int32), tl.load(token_indices + i_t * 2 + 1).to(tl.int32)            
+65                bos, eos = tl.load(offsets + i_n).to(tl.int32), tl.load(offsets + i_n + 1).to(tl.int32)                                
+66                T = eos - bos                                                                                                          
+67                boc = tl.load(chunk_offsets + i_n).to(tl.int32)                                                                        
+68            else:                                                                                                                      
+69                bos, eos = i_b * T, i_b * T + T                                                                                        
+70                boc = i_b * tl.cdiv(T, BS)                                                                                             
+71                                                                                                                                       
+72            p_q = tl.make_block_ptr(q + (bos + i_t) * HQ*K, (HQ, K), (K, 1), (i_h * G, 0), (G, BK), (1, 0))                            
+73                                                                                                                                       
+74            # the Q block is kept in the shared memory throughout the whole kernel                                                     
+75            # [G, BK]                                                                                                                  
+76            b_q = tl.load(p_q, boundary_check=(0, 1))                                                                                  
+77            b_q = (b_q * scale).to(b_q.dtype)                                                                                          
+78                                                                                                                                       
+79            # the number of compression representations in total                                                                       
+80            TC = tl.cdiv(T, BS)                                                                                                        
+81            # the number of compression representations required to iterate over                                                       
+82            # incomplete compression blocks are not included                                                                           
+83            NC = (i_t + 1) // BS                                                                                                       
+84                                                                                                                                       
+85            p_o = tl.make_block_ptr(o + (bos + i_t) * HQ*V, (HQ, V), (V, 1), (i_h * G, i_v * BV), (G, BV), (1, 0))                     
+86            # [G, BV]                                                                                                                  
+87            b_o = tl.zeros([G, BV], dtype=tl.float32)                                                                                  
+88            # max scores for the current block                                                                                         
+89            b_m = tl.full([G], float('-inf'), dtype=tl.float32)                                                                        
+90            # lse = log(acc) + m                                                                                                       
+91            b_acc = tl.zeros([G], dtype=tl.float32)                                                                                    
+92                                                                                                                                       
+93            for i_c in range(0, NC, BC):                                                                                               
+94                o_c = i_c + tl.arange(0, BC)                                                                                           
+95                                                                                                                                       
+96                p_k = tl.make_block_ptr(k + (boc * H + i_h) * K, (K, TC), (1, H*K), (0, i_c), (BK, BC), (0, 1))                        
+97                p_v = tl.make_block_ptr(v + (boc * H + i_h) * V, (TC, V), (H*V, 1), (i_c, i_v * BV), (BC, BV), (1, 0))                 
+98                # [BK, BC]                                                                                                             
+99                b_k = tl.load(p_k, boundary_check=(0, 1))                                                                              
+100               # [BC, BV]                                                                                                             
+101               b_v = tl.load(p_v, boundary_check=(0, 1))                                                                              
+102               # [G, BC]                                                                                                              
+103               b_s = tl.dot(b_q, b_k)                                                                                                 
+104               b_s = tl.where((o_c < NC)[None, :], b_s, float('-inf'))                                                                
+105                                                                                                                                      
+106               # [G]                                                                                                                  
+107               b_m, b_mp = tl.maximum(b_m, tl.max(b_s, 1)), b_m                                                                       
+108               b_r = tl.exp(b_mp - b_m)                                                                                               
+109               # [G, BC]                                                                                                              
+110               b_p = tl.exp(b_s - b_m[:, None])                                                                                       
+111               # [G]                                                                                                                  
+112               b_acc = b_acc * b_r + tl.sum(b_p, 1)                                                                                   
+113                                                                                                                                      
+114               # [G, BV]                                                                                                              
+115               b_o = b_o * b_r[:, None] + tl.dot(b_p.to(b_q.dtype), b_v)                                                              
+116                                                                                                                                      
+117               b_mp = b_m                                                                                                             
+118           if NC == 0:                                                                                                                
+119               b_lse = tl.zeros([G], dtype=tl.float32)                                                                                
+120           else:                                                                                                                      
+121               b_o = b_o / b_acc[:, None]                                                                                             
+122               b_lse = b_m + tl.log(b_acc)                                                                                            
+123                                                                                                                                      
+124           tl.store(p_o, b_o.to(p_o.dtype.element_ty), boundary_check=(0, 1))                                                         
+125           if i_v == 0:                                                                                                               
+126               tl.store(lse + (bos + i_t) * HQ + i_h * G + tl.arange(0, G), b_lse.to(lse.dtype.element_ty))                           
+127                                                                                                                                      
+128                                                                                                                                      
+129       @triton.heuristics({                                                                                                           
+130           'USE_OFFSETS': lambda args: args['offsets'] is not None,                                                                   
+131       })                                                                                                                             
+132       @triton.autotune(                                                                                                              
+133           configs=[                                                                                                                  
+134               triton.Config({}, num_warps=num_warps)                                                                                 
+135               for num_warps in [1, 2, 4]                                                                                             
+136           ],                                                                                                                         
+137           key=['BS', 'BK', 'BV'],                                                                                                    
+138       )                                                                                                                              
+139       @triton.jit(do_not_specialize=['T'])                                                                                           
+140       def parallel_nsa_compression_bwd_kernel_dq(                                                                                    
+141           q,                                                                                                                         
+142           k,                                                                                                                         
+143           v,                                                                                                                         
+144           lse,                                                                                                                       
+145           delta,                                                                                                                     
+146           do,                                                                                                                        
+147           dq,                                                                                                                        
+148           scale,                                                                                                                     
+149           offsets,                                                                                                                   
+150           token_indices,                                                                                                             
+151           chunk_offsets,                                                                                                             
+152           T,                                                                                                                         
+153           B: tl.constexpr,                                                                                                           
+154           H: tl.constexpr,                                                                                                           
+155           HQ: tl.constexpr,                                                                                                          
+156           G: tl.constexpr,                                                                                                           
+157           K: tl.constexpr,                                                                                                           
+158           V: tl.constexpr,                                                                                                           
+159           BC: tl.constexpr,                                                                                                          
+160           BS: tl.constexpr,                                                                                                          
+161           BK: tl.constexpr,                                                                                                          
+162           BV: tl.constexpr,                                                                                                          
+163           USE_OFFSETS: tl.constexpr                                                                                                  
+164       ):                                                                                                                             
+165           i_t, i_v, i_bh = tl.program_id(0), tl.program_id(1), tl.program_id(2)                                                      
+166           i_b, i_h = i_bh // H, i_bh % H                                                                                             
+167                                                                                                                                      
+168           if USE_OFFSETS:                                                                                                            
+169               i_n, i_t = tl.load(token_indices + i_t * 2).to(tl.int32), tl.load(token_indices + i_t * 2 + 1).to(tl.int32)            
+170               bos, eos = tl.load(offsets + i_n).to(tl.int32), tl.load(offsets + i_n + 1).to(tl.int32)                                
+171               T = eos - bos                                                                                                          
+172               boc = tl.load(chunk_offsets + i_n).to(tl.int32)                                                                        
+173           else:                                                                                                                      
+174               bos, eos = i_b * T, i_b * T + T                                                                                        
+175               boc = i_b * tl.cdiv(T, BS)                                                                                             
+176                                                                                                                                      
+177           q += (bos + i_t) * HQ*K                                                                                                    
+178           do += (bos + i_t) * HQ*V                                                                                                   
+179           lse += (bos + i_t) * HQ                                                                                                    
+180           delta += (bos + i_t) * HQ                                                                                                  
+181           dq += (i_v * B * T + bos + i_t) * HQ*K                                                                                     
+182                                                                                                                                      
+183           p_q = tl.make_block_ptr(q, (HQ, K), (K, 1), (i_h * G, 0), (G, BK), (1, 0))                                                 
+184           p_dq = tl.make_block_ptr(dq, (HQ, K), (K, 1), (i_h * G, 0), (G, BK), (1, 0))                                               
+185                                                                                                                                      
+186           # [G, BK]                                                                                                                  
+187           b_q = tl.load(p_q, boundary_check=(0, 1))                                                                                  
+188           b_q = (b_q * scale).to(b_q.dtype)                                                                                          
+189                                                                                                                                      
+190           p_do = tl.make_block_ptr(do, (HQ, V), (V, 1), (i_h * G, i_v * BV), (G, BV), (1, 0))                                        
+191           p_lse = lse + i_h * G + tl.arange(0, G)                                                                                    
+192           p_delta = delta + i_h * G + tl.arange(0, G)                                                                                
+193                                                                                                                                      
+194           # the number of compression representations in total                                                                       
+195           TC = tl.cdiv(T, BS)                                                                                                        
+196           # the number of compression representations required to iterate over                                                       
+197           # incomplete compression blocks are not included                                                                           
+198           NC = (i_t + 1) // BS                                                                                                       
+199                                                                                                                                      
+200           # [G, BV]                                                                                                                  
+201           b_do = tl.load(p_do, boundary_check=(0, 1))                                                                                
+202           # [G]                                                                                                                      
+203           b_lse = tl.load(p_lse)                                                                                                     
+204           b_delta = tl.load(p_delta)                                                                                                 
+205                                                                                                                                      
+206           # [G, BK]                                                                                                                  
+207           b_dq = tl.zeros([G, BK], dtype=tl.float32)                                                                                 
+208           for i_c in range(0, NC, BC):                                                                                               
+209               o_c = i_c + tl.arange(0, BC)                                                                                           
+210               p_k = tl.make_block_ptr(k + (boc * H + i_h) * K, (K, TC), (1, H*K), (0, i_c), (BK, BC), (0, 1))                        
+211               p_v = tl.make_block_ptr(v + (boc * H + i_h) * V, (V, TC), (1, H*V), (i_v * BV, i_c), (BV, BC), (0, 1))                 
+212               # [BK, BC]                                                                                                             
+213               b_k = tl.load(p_k, boundary_check=(0, 1))                                                                              
+214               # [BV, BC]                                                                                                             
+215               b_v = tl.load(p_v, boundary_check=(0, 1))                                                                              
+216                                                                                                                                      
+217               # [G, BC]                                                                                                              
+218               b_s = tl.dot(b_q, b_k)                                                                                                 
+219               b_p = tl.exp(b_s - b_lse[:, None])                                                                                     
+220               b_p = tl.where((o_c < NC)[None, :], b_p, 0)                                                                            
+221                                                                                                                                      
+222               # [G, BV] @ [BV, BC] -> [G, BC]                                                                                        
+223               b_dp = tl.dot(b_do, b_v)                                                                                               
+224               b_ds = b_p * (b_dp.to(tl.float32) - b_delta[:, None])                                                                  
+225               # [G, BC] @ [BC, BK] -> [G, BK]                                                                                        
+226               b_dq += tl.dot(b_ds.to(b_k.dtype), tl.trans(b_k))                                                                      
+227           b_dq *= scale                                                                                                              
+228           tl.store(p_dq, b_dq.to(p_dq.dtype.element_ty), boundary_check=(0, 1))                                                      
+229                                                                                                                                      
+230                                                                                                                                      
+231       @triton.heuristics({                                                                                                           
+232           'USE_OFFSETS': lambda args: args['offsets'] is not None                                                                    
+233       })                                                                                                                             
+234       @triton.autotune(                                                                                                              
+235           configs=[                                                                                                                  
+236               triton.Config({}, num_warps=num_warps)                                                                                 
+237               for num_warps in [1, 2, 4]                                                                                             
+238           ],                                                                                                                         
+239           key=['BS', 'BK', 'BV'],                                                                                                    
+240       )                                                                                                                              
+241       @triton.jit(do_not_specialize=['T'])                                                                                           
+242       def parallel_nsa_compression_bwd_kernel_dkv(                                                                                   
+243           q,                                                                                                                         
+244           k,                                                                                                                         
+245           v,                                                                                                                         
+246           lse,                                                                                                                       
+247           delta,                                                                                                                     
+248           do,                                                                                                                        
+249           dk,                                                                                                                        
+250           dv,                                                                                                                        
+251           offsets,                                                                                                                   
+252           chunk_indices,                                                                                                             
+253           chunk_offsets,                                                                                                             
+254           scale,                                                                                                                     
+255           T,                                                                                                                         
+256           B: tl.constexpr,                                                                                                           
+257           H: tl.constexpr,                                                                                                           
+258           HQ: tl.constexpr,                                                                                                          
+259           G: tl.constexpr,                                                                                                           
+260           K: tl.constexpr,                                                                                                           
+261           V: tl.constexpr,                                                                                                           
+262           BC: tl.constexpr,                                                                                                          
+263           BS: tl.constexpr,                                                                                                          
+264           BK: tl.constexpr,                                                                                                          
+265           BV: tl.constexpr,                                                                                                          
+266           USE_OFFSETS: tl.constexpr                                                                                                  
+267       ):                                                                                                                             
+268           i_v, i_c, i_bh = tl.program_id(0), tl.program_id(1), tl.program_id(2)                                                      
+269           i_b, i_h = i_bh // H, i_bh % H                                                                                             
+270                                                                                                                                      
+271           if USE_OFFSETS:                                                                                                            
+272               i_n, i_c = tl.load(chunk_indices + i_c * 2).to(tl.int32), tl.load(chunk_indices + i_c * 2 + 1).to(tl.int32)            
+273               bos, eos = tl.load(offsets + i_n).to(tl.int32), tl.load(offsets + i_n + 1).to(tl.int32)                                
+274               T = eos - bos                                                                                                          
+275               boc = tl.load(chunk_offsets + i_n).to(tl.int32)                                                                        
+276           else:                                                                                                                      
+277               bos, eos = i_b * T, i_b * T + T                                                                                        
+278               boc = i_b * tl.cdiv(T, BS)                                                                                             
+279                                                                                                                                      
+280           # the number of compression representations in total                                                                       
+281           TC = tl.cdiv(T, BS)                                                                                                        
+282                                                                                                                                      
+283           p_k = tl.make_block_ptr(k + (boc * H + i_h) * K, (TC, K), (H*K, 1), (i_c * BC, 0), (BC, BK), (1, 0))                       
+284           p_v = tl.make_block_ptr(v + (boc * H + i_h) * V, (TC, V), (H*V, 1), (i_c * BC, i_v * BV), (BC, BV), (1, 0))                
+285           p_dk = tl.make_block_ptr(dk + (i_v * B*T*H + boc * H + i_h) * K, (TC, K), (H*K, 1), (i_c * BC, 0), (BC, BK), (1, 0))       
+286           p_dv = tl.make_block_ptr(dv + (i_v * B*T*H + boc * H + i_h) * V, (TC, V), (H*V, 1), (i_c * BC, i_v * BV), (BC, BV), (1, 0))
+287                                                                                                                                      
+288           # [BC, BK]                                                                                                                 
+289           b_k = tl.load(p_k, boundary_check=(0, 1))                                                                                  
+290           b_dk = tl.zeros([BC, BK], dtype=tl.float32)                                                                                
+291           # [BC, BV]                                                                                                                 
+292           b_v = tl.load(p_v, boundary_check=(0, 1))                                                                                  
+293           b_dv = tl.zeros([BC, BV], dtype=tl.float32)                                                                                
+294                                                                                                                                      
+295           for i in range(i_c * BC * BS, T):                                                                                          
+296               o_c = i_c * BC + tl.arange(0, BC)                                                                                      
+297                                                                                                                                      
+298               p_q = tl.make_block_ptr(q + (bos + i) * HQ*K, (HQ, K), (K, 1), (i_h * G, 0), (G, BK), (1, 0))                          
+299               # [G, BK]                                                                                                              
+300               b_q = tl.load(p_q, boundary_check=(0, 1))                                                                              
+301               b_q = (b_q * scale).to(b_q.dtype)                                                                                      
+302                                                                                                                                      
+303               p_do = tl.make_block_ptr(do + (bos + i) * HQ*V, (HQ, V), (V, 1), (i_h * G, i_v * BV), (G, BV), (1, 0))                 
+304               p_lse = lse + (bos + i) * HQ + i_h * G + tl.arange(0, G)                                                               
+305               p_delta = delta + (bos + i) * HQ + i_h * G + tl.arange(0, G)                                                           
+306               # [G, BV]                                                                                                              
+307               b_do = tl.load(p_do, boundary_check=(0, 1))                                                                            
+308               # [G]                                                                                                                  
+309               b_lse = tl.load(p_lse)                                                                                                 
+310               b_delta = tl.load(p_delta)                                                                                             
+311               # [BC, G]                                                                                                              
+312               b_s = tl.dot(b_k, tl.trans(b_q))                                                                                       
+313               b_p = tl.exp(b_s - b_lse[None, :])                                                                                     
+314               b_p = tl.where((i >= max(0, (o_c + 1) * BS - 1))[:, None], b_p, 0)                                                     
+315               # [BC, G] @ [G, BV] -> [BC, BV]                                                                                        
+316               b_dv += tl.dot(b_p.to(b_do.dtype), b_do)                                                                               
+317               # [BC, BV] @ [BV, G] -> [BC, G]                                                                                        
+318               b_dp = tl.dot(b_v, tl.trans(b_do))                                                                                     
+319               # [BC, G]                                                                                                              
+320               b_ds = b_p * (b_dp - b_delta[None, :])                                                                                 
+321               # [BC, G] @ [G, BK] -> [BC, BK]                                                                                        
+322               b_dk += tl.dot(b_ds.to(b_q.dtype), b_q)                                                                                
+323                                                                                                                                      
+324           tl.store(p_dk, b_dk.to(p_dk.dtype.element_ty), boundary_check=(0, 1))                                                      
+325           tl.store(p_dv, b_dv.to(p_dv.dtype.element_ty), boundary_check=(0, 1))                                                      
+326                                                                                                                                      
+327                                                                                                                                      
+328       @triton.heuristics({                                                                                                           
+329           'USE_OFFSETS': lambda args: args['offsets'] is not None                                                                    
+330       })                                                                                                                             
+331       @triton.autotune(                                                                                                              
+332           configs=[                                                                                                                  
+333               triton.Config({}, num_warps=num_warps)                                                                                 
+334               for num_warps in [1, 2, 4]                                                                                             
+335           ],                                                                                                                         
+336           key=['BS', 'BK'],                                                                                                          
+337       )                                                                                                                              
+338       @triton.jit                                                                                                                    
+339       def parallel_nsa_kernel_topk(                                                                                                  
+340           q,                                                                                                                         
+341           k,                                                                                                                         
+342           lse,                                                                                                                       
+343           scale,                                                                                                                     
+344           block_indices,                                                                                                             
+345           offsets,                                                                                                                   
+346           token_indices,                                                                                                             
+347           chunk_offsets,                                                                                                             
+348           T,                                                                                                                         
+349           H: tl.constexpr,                                                                                                           
+350           HQ: tl.constexpr,                                                                                                          
+351           G: tl.constexpr,                                                                                                           
+352           K: tl.constexpr,                                                                                                           
+353           S: tl.constexpr,                                                                                                           
+354           BC: tl.constexpr,                                                                                                          
+355           BS: tl.constexpr,                                                                                                          
+356           BK: tl.constexpr,                                                                                                          
+357           USE_OFFSETS: tl.constexpr,                                                                                                 
+358       ):                                                                                                                             
+359           i_t, i_bh = tl.program_id(0), tl.program_id(1)                                                                             
+360           i_b, i_h = i_bh // H, i_bh % H                                                                                             
+361                                                                                                                                      
+362           if USE_OFFSETS:                                                                                                            
+363               i_n, i_t = tl.load(token_indices + i_t * 2).to(tl.int32), tl.load(token_indices + i_t * 2 + 1).to(tl.int32)            
+364               bos, eos = tl.load(offsets + i_n).to(tl.int32), tl.load(offsets + i_n + 1).to(tl.int32)                                
+365               T = eos - bos                                                                                                          
+366               boc = tl.load(chunk_offsets + i_n).to(tl.int32)                                                                        
+367           else:                                                                                                                      
+368               bos, eos = i_b * T, i_b * T + T                                                                                        
+369               boc = i_b * tl.cdiv(T, BS)                                                                                             
+370                                                                                                                                      
+371           p_q = tl.make_block_ptr(q + (bos + i_t) * HQ*K, (HQ, K), (K, 1), (i_h * G, 0), (G, BK), (1, 0))                            
+372                                                                                                                                      
+373           # the Q block is kept in the shared memory throughout the whole kernel                                                     
+374           # [G, BK]                                                                                                                  
+375           b_q = tl.load(p_q, boundary_check=(0, 1))                                                                                  
+376           b_q = (b_q * scale).to(b_q.dtype)                                                                                          
+377                                                                                                                                      
+378           # the number of compression representations in total                                                                       
+379           TC = tl.cdiv(T, BS)                                                                                                        
+380           # the number of compression representations required to iterate over                                                       
+381           # incomplete compression blocks are not included                                                                           
+382           NC = (i_t + 1) // BS                                                                                                       
+383           ################################                                                                                           
+384           # 1. lse computation                                                                                                       
+385           ################################                                                                                           
+386           if lse is not None:                                                                                                        
+387               b_lse = tl.load(lse + (bos + i_t) * HQ + i_h * G + tl.arange(0, G))                                                    
+388           else:                                                                                                                      
+389               # max scores for the current block                                                                                     
+390               b_m = tl.full([G], float('-inf'), dtype=tl.float32)                                                                    
+391               # lse = log(acc) + m                                                                                                   
+392               b_acc = tl.zeros([G], dtype=tl.float32)                                                                                
+393               for i_c in range(0, NC, BC):                                                                                           
+394                   o_c = i_c + tl.arange(0, BC)                                                                                       
+395                                                                                                                                      
+396                   p_k = tl.make_block_ptr(k + (boc * H + i_h) * K, (K, TC), (1, H*K), (0, i_c), (BK, BC), (0, 1))                    
+397                   # [BK, BC]                                                                                                         
+398                   b_k = tl.load(p_k, boundary_check=(0, 1))                                                                          
+399                                                                                                                                      
+400                   # [G, BC]                                                                                                          
+401                   b_s = tl.dot(b_q, b_k)                                                                                             
+402                   b_s = tl.where((o_c < NC)[None, :], b_s, float('-inf'))                                                            
+403                                                                                                                                      
+404                   # [G]                                                                                                              
+405                   b_m, b_mp = tl.maximum(b_m, tl.max(b_s, 1)), b_m                                                                   
+406                   b_r = tl.exp(b_mp - b_m)                                                                                           
+407                   # [G, BC]                                                                                                          
+408                   b_p = tl.exp(b_s - b_m[:, None])                                                                                   
+409                   # [G]                                                                                                              
+410                   b_acc = b_acc * b_r + tl.sum(b_p, 1)                                                                               
+411                                                                                                                                      
+412                   b_mp = b_m                                                                                                         
+413               if NC == 0:                                                                                                            
+414                   b_lse = tl.zeros([G], dtype=tl.float32)                                                                            
+415               else:                                                                                                                  
+416                   b_lse = b_m + tl.log(b_acc)                                                                                        
+417                                                                                                                                      
+418           ################################                                                                                           
+419           # 2. topk selection                                                                                                        
+420           ################################                                                                                           
+421           # [BC]                                                                                                                     
+422           b_i = tl.full([BC], -1, dtype=tl.float32)                                                                                  
+423           o_i = tl.zeros([BC], dtype=tl.int32)                                                                                       
+424           m_i = tl.arange(0, BC) < BC//2                                                                                             
+425           for i_c in range(0, i_t // BS + 1, BC):                                                                                    
+426               o_c = i_c + tl.arange(0, BC)                                                                                           
+427                                                                                                                                      
+428               p_k = tl.make_block_ptr(k + (boc * H + i_h) * K, (K, TC), (1, H*K), (0, i_c), (BK, BC), (0, 1))                        
+429               # [BK, BC]                                                                                                             
+430               b_k = tl.load(p_k, boundary_check=(0, 1))                                                                              
+431               # [G, BC]                                                                                                              
+432               b_s = tl.dot(b_q, b_k)                                                                                                 
+433               b_s = tl.where((i_t // BS > o_c)[None, :], b_s, float('-inf'))                                                         
+434               # [G, BC]                                                                                                              
+435               b_p = tl.where((i_t // BS == o_c)[None, :], float(1.0), tl.exp(b_s - b_lse[:, None]))                                  
+436               # the importance scores of the current block                                                                           
+437               # [BC]                                                                                                                 
+438               b_i, b_ip = tl.sum(b_p, 0), b_i                                                                                        
+439               o_i, o_ip = tl.where(o_c <= i_t // BS, o_c + 1, 0), o_i                                                                
+440                                                                                                                                      
+441               n_dims: tl.constexpr = tl.standard._log2(b_i.shape[0])                                                                 
+442               for i in tl.static_range(1, n_dims):                                                                                   
+443                   b_i, o_i = _bitonic_merge(b_i, o_i.to(tl.int32), i, 2, n_dims)                                                     
+444                                                                                                                                      
+445               if i_c != 0:                                                                                                           
+446                   b_i, o_i = _bitonic_merge(b_i, o_i.to(tl.int32), n_dims, False, n_dims)                                            
+447                   b_i_new = b_ip * m_i + b_i * (1 - m_i)                                                                             
+448                   o_i_new = o_ip * m_i + o_i * (1 - m_i)                                                                             
+449                   b_i, o_i = _bitonic_merge(b_i_new, o_i_new.to(tl.int32), n_dims, True, n_dims)                                     
+450               else:                                                                                                                  
+451                   b_i, o_i = _bitonic_merge(b_i, o_i.to(tl.int32), n_dims, True, n_dims)                                             
+452                                                                                                                                      
+453           m_top = tl.arange(0, BC//S) == 0                                                                                           
+454           b_top = tl.sum(m_top[:, None] * tl.reshape(o_i - 1, [BC//S, S]), 0)                                                        
+455                                                                                                                                      
+456           p_b = tl.make_block_ptr(block_indices + (bos + i_t) * H*S, (H*S,), (1,), (i_h * S,), (S,), (0,))                           
+457           tl.store(p_b, b_top.to(p_b.dtype.element_ty))                                                                              
+458                                                                                                                                      
+459                                                                                                                                      
+460       @triton.heuristics({                                                                                                           
+461           'USE_OFFSETS': lambda args: args['offsets'] is not None,                                                                   
+462           'USE_BLOCK_COUNTS': lambda args: isinstance(args['block_counts'], torch.Tensor),                                           
+463       })                                                                                                                             
+464       @triton.autotune(                                                                                                              
+465           configs=[                                                                                                                  
+466               triton.Config({}, num_warps=num_warps)                                                                                 
+467               for num_warps in [1, 2, 4]                                                                                             
+468           ],                                                                                                                         
+469           key=['BS', 'BK', 'BV'],                                                                                                    
+470       )                                                                                                                              
+471       @triton.jit                                                                                                                    
+472       def parallel_nsa_fwd_kernel(                                                                                                   
+473           q,                                                                                                                         
+474           k,                                                                                                                         
+475           v,                                                                                                                         
+476           o,                                                                                                                         
+477           lse,                                                                                                                       
+478           scale,                                                                                                                     
+479           block_indices,                                                                                                             
+480           block_counts,                                                                                                              
+481           offsets,                                                                                                                   
+482           token_indices,                                                                                                             
+483           T,                                                                                                                         
+484           H: tl.constexpr,                                                                                                           
+485           HQ: tl.constexpr,                                                                                                          
+486           G: tl.constexpr,                                                                                                           
+487           K: tl.constexpr,                                                                                                           
+488           V: tl.constexpr,                                                                                                           
+489           S: tl.constexpr,                                                                                                           
+490           BS: tl.constexpr,                                                                                                          
+491           BK: tl.constexpr,                                                                                                          
+492           BV: tl.constexpr,                                                                                                          
+493           USE_OFFSETS: tl.constexpr,                                                                                                 
+494           USE_BLOCK_COUNTS: tl.constexpr                                                                                             
+495       ):                                                                                                                             
+496           i_t, i_v, i_bh = tl.program_id(0), tl.program_id(1), tl.program_id(2)                                                      
+497           i_b, i_h = i_bh // H, i_bh % H                                                                                             
+498                                                                                                                                      
+499           if USE_OFFSETS:                                                                                                            
+500               i_n, i_t = tl.load(token_indices + i_t * 2).to(tl.int32), tl.load(token_indices + i_t * 2 + 1).to(tl.int32)            
+501               bos, eos = tl.load(offsets + i_n).to(tl.int32), tl.load(offsets + i_n + 1).to(tl.int32)                                
+502               T = eos - bos                                                                                                          
+503           else:                                                                                                                      
+504               bos, eos = i_b * T, i_b * T + T                                                                                        
+505                                                                                                                                      
+506           k += (bos * H + i_h) * K                                                                                                   
+507           v += (bos * H + i_h) * V                                                                                                   
+508           block_indices += (bos + i_t) * H*S + i_h * S                                                                               
+509                                                                                                                                      
+510           if USE_BLOCK_COUNTS:                                                                                                       
+511               NS = tl.load(block_counts + (bos + i_t) * H + i_h)                                                                     
+512           else:                                                                                                                      
+513               NS = S                                                                                                                 
+514                                                                                                                                      
+515           p_q = tl.make_block_ptr(q + (bos + i_t) * HQ*K, (HQ, K), (K, 1), (i_h * G, 0), (G, BK), (1, 0))                            
+516           # the Q block is kept in the shared memory throughout the whole kernel                                                     
+517           # [G, BK]                                                                                                                  
+518           b_q = tl.load(p_q, boundary_check=(0, 1))                                                                                  
+519           b_q = (b_q * scale).to(b_q.dtype)                                                                                          
+520                                                                                                                                      
+521           p_o = tl.make_block_ptr(o + (bos + i_t) * HQ*V, (HQ, V), (V, 1), (i_h * G, i_v * BV), (G, BV), (1, 0))                     
+522           p_lse = lse + (bos + i_t) * HQ + i_h * G + tl.arange(0, G)                                                                 
+523           # [G, BV]                                                                                                                  
+524           b_o = tl.zeros([G, BV], dtype=tl.float32)                                                                                  
+525                                                                                                                                      
+526           b_m = tl.full([G], float('-inf'), dtype=tl.float32)                                                                        
+527           b_acc = tl.zeros([G], dtype=tl.float32)                                                                                    
+528           for i in range(NS):                                                                                                        
+529               i_s = tl.load(block_indices + i).to(tl.int32) * BS                                                                     
+530               if i_s <= i_t and i_s >= 0:                                                                                            
+531                   p_k = tl.make_block_ptr(k, (K, T), (1, H*K), (0, i_s), (BK, BS), (0, 1))                                           
+532                   p_v = tl.make_block_ptr(v, (T, V), (H*V, 1), (i_s, i_v * BV), (BS, BV), (1, 0))                                    
+533                   # [BK, BS]                                                                                                         
+534                   b_k = tl.load(p_k, boundary_check=(0, 1))                                                                          
+535                   # [BS, BV]                                                                                                         
+536                   b_v = tl.load(p_v, boundary_check=(0, 1))                                                                          
+537                   # [G, BS]                                                                                                          
+538                   b_s = tl.dot(b_q, b_k)                                                                                             
+539                   b_s = tl.where((i_t >= (i_s + tl.arange(0, BS)))[None, :], b_s, float('-inf'))                                     
+540                                                                                                                                      
+541                   # [G]                                                                                                              
+542                   b_m, b_mp = tl.maximum(b_m, tl.max(b_s, 1)), b_m                                                                   
+543                   b_r = tl.exp(b_mp - b_m)                                                                                           
+544                   # [G, BS]                                                                                                          
+545                   b_p = tl.exp(b_s - b_m[:, None])                                                                                   
+546                   # [G]                                                                                                              
+547                   b_acc = b_acc * b_r + tl.sum(b_p, 1)                                                                               
+548                   # [G, BV]                                                                                                          
+549                   b_o = b_o * b_r[:, None] + tl.dot(b_p.to(b_q.dtype), b_v)                                                          
+550                                                                                                                                      
+551                   b_mp = b_m                                                                                                         
+552           b_o = b_o / b_acc[:, None]                                                                                                 
+553           b_m += tl.log(b_acc)                                                                                                       
+554           tl.store(p_o, b_o.to(p_o.dtype.element_ty), boundary_check=(0, 1))                                                         
+555           tl.store(p_lse, b_m.to(p_lse.dtype.element_ty))                                                                            
+556                                                                                                                                      
+557                                                                                                                                      
+558       @triton.heuristics({                                                                                                           
+559           'USE_BLOCK_COUNTS': lambda args: isinstance(args['block_counts'], torch.Tensor)                                            
+560       })                                                                                                                             
+561       @triton.jit                                                                                                                    
+562       def parallel_nsa_kernel_mask(                                                                                                  
+563           block_indices,                                                                                                             
+564           block_counts,                                                                                                              
+565           block_mask,                                                                                                                
+566           T: tl.constexpr,                                                                                                           
+567           H: tl.constexpr,                                                                                                           
+568           S: tl.constexpr,                                                                                                           
+569           BS: tl.constexpr,                                                                                                          
+570           NS: tl.constexpr,                                                                                                          
+571           USE_BLOCK_COUNTS: tl.constexpr                                                                                             
+572       ):                                                                                                                             
+573           i_t, i_b, i_hs = tl.program_id(0), tl.program_id(1), tl.program_id(2)                                                      
+574           i_h, i_s = i_hs // S, i_hs % S                                                                                             
+575                                                                                                                                      
+576           b_i = tl.load(block_indices + i_b * T * H * S + i_t * H * S + i_h * S + i_s)                                               
+577           if USE_BLOCK_COUNTS:                                                                                                       
+578               b_m = b_i * BS <= i_t and i_s < tl.load(block_counts + i_b * T * H + i_t * H + i_h)                                    
+579           else:                                                                                                                      
+580               b_m = b_i * BS <= i_t                                                                                                  
+581                                                                                                                                      
+582           if b_i < NS and b_i >= 0:                                                                                                  
+583               tl.store(block_mask + i_b * T * H * NS + i_t * H * NS + i_h * NS + b_i, b_m.to(block_mask.dtype.element_ty))           
+584                                                                                                                                      
+585                                                                                                                                      
+586       @triton.jit                                                                                                                    
+587       def parallel_nsa_bwd_kernel_preprocess(                                                                                        
+588           o,                                                                                                                         
+589           do,                                                                                                                        
+590           delta,                                                                                                                     
+591           B: tl.constexpr,                                                                                                           
+592           V: tl.constexpr                                                                                                            
+593       ):                                                                                                                             
+594           i_n = tl.program_id(0)                                                                                                     
+595           o_d = tl.arange(0, B)                                                                                                      
+596           m_d = o_d < V                                                                                                              
+597                                                                                                                                      
+598           b_o = tl.load(o + i_n * V + o_d, mask=m_d, other=0)                                                                        
+599           b_do = tl.load(do + i_n * V + o_d, mask=m_d, other=0).to(tl.float32)                                                       
+600           b_delta = tl.sum(b_o * b_do)                                                                                               
+601                                                                                                                                      
+602           tl.store(delta + i_n, b_delta.to(delta.dtype.element_ty))                                                                  
+603                                                                                                                                      
+604                                                                                                                                      
+605       @triton.heuristics({                                                                                                           
+606           'USE_OFFSETS': lambda args: args['offsets'] is not None,                                                                   
+607           'USE_BLOCK_COUNTS': lambda args: isinstance(args['block_counts'], torch.Tensor)                                            
+608       })                                                                                                                             
+609       @triton.autotune(                                                                                                              
+610           configs=[                                                                                                                  
+611               triton.Config({}, num_warps=num_warps)                                                                                 
+612               for num_warps in [1, 2, 4]                                                                                             
+613           ],                                                                                                                         
+614           key=['BS', 'BK', 'BV'],                                                                                                    
+615       )                                                                                                                              
+616       @triton.jit(do_not_specialize=['T'])                                                                                           
+617       def parallel_nsa_bwd_kernel_dq(                                                                                                
+618           q,                                                                                                                         
+619           k,                                                                                                                         
+620           v,                                                                                                                         
+621           lse,                                                                                                                       
+622           delta,                                                                                                                     
+623           do,                                                                                                                        
+624           dq,                                                                                                                        
+625           scale,                                                                                                                     
+626           block_indices,                                                                                                             
+627           block_counts,                                                                                                              
+628           offsets,                                                                                                                   
+629           token_indices,                                                                                                             
+630           T,                                                                                                                         
+631           B: tl.constexpr,                                                                                                           
+632           H: tl.constexpr,                                                                                                           
+633           HQ: tl.constexpr,                                                                                                          
+634           G: tl.constexpr,                                                                                                           
+635           K: tl.constexpr,                                                                                                           
+636           V: tl.constexpr,                                                                                                           
+637           S: tl.constexpr,                                                                                                           
+638           BS: tl.constexpr,                                                                                                          
+639           BK: tl.constexpr,                                                                                                          
+640           BV: tl.constexpr,                                                                                                          
+641           USE_OFFSETS: tl.constexpr,                                                                                                 
+642           USE_BLOCK_COUNTS: tl.constexpr                                                                                             
+643       ):                                                                                                                             
+644           i_t, i_v, i_bh = tl.program_id(0), tl.program_id(1), tl.program_id(2)                                                      
+645           i_b, i_h = i_bh // H, i_bh % H                                                                                             
+646                                                                                                                                      
+647           if USE_OFFSETS:                                                                                                            
+648               i_n, i_t = tl.load(token_indices + i_t * 2).to(tl.int32), tl.load(token_indices + i_t * 2 + 1).to(tl.int32)            
+649               bos, eos = tl.load(offsets + i_n).to(tl.int32), tl.load(offsets + i_n + 1).to(tl.int32)                                
+650               T = eos - bos                                                                                                          
+651           else:                                                                                                                      
+652               bos, eos = i_b * T, i_b * T + T                                                                                        
+653                                                                                                                                      
+654           q += (bos + i_t) * HQ*K                                                                                                    
+655           do += (bos + i_t) * HQ*V                                                                                                   
+656           lse += (bos + i_t) * HQ                                                                                                    
+657           delta += (bos + i_t) * HQ                                                                                                  
+658           dq += (i_v * B * T + bos + i_t) * HQ*K                                                                                     
+659           block_indices += (bos + i_t) * H*S + i_h * S                                                                               
+660                                                                                                                                      
+661           if USE_BLOCK_COUNTS:                                                                                                       
+662               NS = tl.load(block_counts + (bos + i_t) * H + i_h)                                                                     
+663           else:                                                                                                                      
+664               NS = S                                                                                                                 
+665                                                                                                                                      
+666           k += (bos * H + i_h) * K                                                                                                   
+667           v += (bos * H + i_h) * V                                                                                                   
+668                                                                                                                                      
+669           p_q = tl.make_block_ptr(q, (HQ, K), (K, 1), (i_h * G, 0), (G, BK), (1, 0))                                                 
+670           p_dq = tl.make_block_ptr(dq, (HQ, K), (K, 1), (i_h * G, 0), (G, BK), (1, 0))                                               
+671                                                                                                                                      
+672           # [G, BK]                                                                                                                  
+673           b_q = tl.load(p_q, boundary_check=(0, 1))                                                                                  
+674           b_q = (b_q * scale).to(b_q.dtype)                                                                                          
+675                                                                                                                                      
+676           p_do = tl.make_block_ptr(do, (HQ, V), (V, 1), (i_h * G, i_v * BV), (G, BV), (1, 0))                                        
+677           p_lse = lse + i_h * G + tl.arange(0, G)                                                                                    
+678           p_delta = delta + i_h * G + tl.arange(0, G)                                                                                
+679                                                                                                                                      
+680           # [G, BV]                                                                                                                  
+681           b_do = tl.load(p_do, boundary_check=(0, 1))                                                                                
+682           # [G]                                                                                                                      
+683           b_lse = tl.load(p_lse)                                                                                                     
+684           b_delta = tl.load(p_delta)                                                                                                 
+685                                                                                                                                      
+686           # [G, BK]                                                                                                                  
+687           b_dq = tl.zeros([G, BK], dtype=tl.float32)                                                                                 
+688           for i in range(NS):                                                                                                        
+689               i_s = tl.load(block_indices + i).to(tl.int32) * BS                                                                     
+690               if i_s <= i_t and i_s >= 0:                                                                                            
+691                   p_k = tl.make_block_ptr(k, (K, T), (1, H*K), (0, i_s), (BK, BS), (0, 1))                                           
+692                   p_v = tl.make_block_ptr(v, (V, T), (1, H*V), (i_v * BV, i_s), (BV, BS), (0, 1))                                    
+693                   # [BK, BS]                                                                                                         
+694                   b_k = tl.load(p_k, boundary_check=(0, 1))                                                                          
+695                   # [BV, BS]                                                                                                         
+696                   b_v = tl.load(p_v, boundary_check=(0, 1))                                                                          
+697                                                                                                                                      
+698                   # [G, BS]                                                                                                          
+699                   b_s = tl.dot(b_q, b_k)                                                                                             
+700                   b_p = tl.exp(b_s - b_lse[:, None])                                                                                 
+701                   b_p = tl.where((i_t >= (i_s + tl.arange(0, BS)))[None, :], b_p, 0)                                                 
+702                                                                                                                                      
+703                   # [G, BV] @ [BV, BS] -> [G, BS]                                                                                    
+704                   b_dp = tl.dot(b_do, b_v)                                                                                           
+705                   b_ds = b_p * (b_dp.to(tl.float32) - b_delta[:, None])                                                              
+706                   # [G, BS] @ [BS, BK] -> [G, BK]                                                                                    
+707                   b_dq += tl.dot(b_ds.to(b_k.dtype), tl.trans(b_k))                                                                  
+708           b_dq *= scale                                                                                                              
+709                                                                                                                                      
+710           tl.store(p_dq, b_dq.to(p_dq.dtype.element_ty), boundary_check=(0, 1))                                                      
+711                                                                                                                                      
+712                                                                                                                                      
+713       @triton.heuristics({                                                                                                           
+714           'USE_OFFSETS': lambda args: args['offsets'] is not None                                                                    
+715       })                                                                                                                             
+716       @triton.autotune(                                                                                                              
+717           configs=[                                                                                                                  
+718               triton.Config({}, num_warps=num_warps)                                                                                 
+719               for num_warps in [1, 2, 4]                                                                                             
+720           ],                                                                                                                         
+721           key=['BS', 'BK', 'BV'],                                                                                                    
+722       )                                                                                                                              
+723       @triton.jit(do_not_specialize=['T'])                                                                                           
+724       def parallel_nsa_bwd_kernel_dkv(                                                                                               
+725           q,                                                                                                                         
+726           k,                                                                                                                         
+727           v,                                                                                                                         
+728           lse,                                                                                                                       
+729           delta,                                                                                                                     
+730           do,                                                                                                                        
+731           dk,                                                                                                                        
+732           dv,                                                                                                                        
+733           block_mask,                                                                                                                
+734           offsets,                                                                                                                   
+735           chunk_indices,                                                                                                             
+736           scale,                                                                                                                     
+737           T,                                                                                                                         
+738           B: tl.constexpr,                                                                                                           
+739           H: tl.constexpr,                                                                                                           
+740           HQ: tl.constexpr,                                                                                                          
+741           G: tl.constexpr,                                                                                                           
+742           K: tl.constexpr,                                                                                                           
+743           V: tl.constexpr,                                                                                                           
+744           M: tl.constexpr,                                                                                                           
+745           BS: tl.constexpr,                                                                                                          
+746           BK: tl.constexpr,                                                                                                          
+747           BV: tl.constexpr,                                                                                                          
+748           USE_OFFSETS: tl.constexpr                                                                                                  
+749       ):                                                                                                                             
+750           i_v, i_s, i_bh = tl.program_id(0), tl.program_id(1), tl.program_id(2)                                                      
+751           i_b, i_h = i_bh // H, i_bh % H                                                                                             
+752                                                                                                                                      
+753           if USE_OFFSETS:                                                                                                            
+754               i_n, i_s = tl.load(chunk_indices + i_s * 2).to(tl.int32), tl.load(chunk_indices + i_s * 2 + 1).to(tl.int32)            
+755               bos, eos = tl.load(offsets + i_n).to(tl.int32), tl.load(offsets + i_n + 1).to(tl.int32)                                
+756               T = eos - bos                                                                                                          
+757           else:                                                                                                                      
+758               bos, eos = i_b * T, i_b * T + T                                                                                        
+759                                                                                                                                      
+760           p_k = tl.make_block_ptr(k + (bos * H + i_h) * K, (T, K), (H*K, 1), (i_s * BS, 0), (BS, BK), (1, 0))                        
+761           p_v = tl.make_block_ptr(v + (bos * H + i_h) * V, (T, V), (H*V, 1), (i_s * BS, i_v * BV), (BS, BV), (1, 0))                 
+762           p_dk = tl.make_block_ptr(dk + (i_v * B*T*H + bos * H + i_h) * K, (T, K), (H*K, 1), (i_s * BS, 0), (BS, BK), (1, 0))        
+763           p_dv = tl.make_block_ptr(dv + (bos * H + i_h) * V, (T, V), (H*V, 1), (i_s * BS, i_v * BV), (BS, BV), (1, 0))               
+764                                                                                                                                      
+765           # [BS, BK]                                                                                                                 
+766           b_k = tl.load(p_k, boundary_check=(0, 1))                                                                                  
+767           b_dk = tl.zeros([BS, BK], dtype=tl.float32)                                                                                
+768           # [BS, BV]                                                                                                                 
+769           b_v = tl.load(p_v, boundary_check=(0, 1))                                                                                  
+770           b_dv = tl.zeros([BS, BV], dtype=tl.float32)                                                                                
+771                                                                                                                                      
+772           for i in range(i_s * BS, T):                                                                                               
+773               b_m = tl.load(block_mask + (bos + i) * H*M + i_h * M + i_s)                                                            
+774               if b_m:                                                                                                                
+775                   p_q = tl.make_block_ptr(q + (bos + i) * HQ*K, (HQ, K), (K, 1), (i_h * G, 0), (G, BK), (1, 0))                      
+776                   # [G, BK]                                                                                                          
+777                   b_q = tl.load(p_q, boundary_check=(0, 1))                                                                          
+778                   b_q = (b_q * scale).to(b_q.dtype)                                                                                  
+779                                                                                                                                      
+780                   p_do = tl.make_block_ptr(do + (bos + i) * HQ*V, (HQ, V), (V, 1), (i_h * G, i_v * BV), (G, BV), (1, 0))             
+781                   p_lse = lse + (bos + i) * HQ + i_h * G + tl.arange(0, G)                                                           
+782                   p_delta = delta + (bos + i) * HQ + i_h * G + tl.arange(0, G)                                                       
+783                   # [G, BV]                                                                                                          
+784                   b_do = tl.load(p_do, boundary_check=(0, 1))                                                                        
+785                   # [G]                                                                                                              
+786                   b_lse = tl.load(p_lse)                                                                                             
+787                   b_delta = tl.load(p_delta)                                                                                         
+788                   # [BS, G]                                                                                                          
+789                   b_s = tl.dot(b_k, tl.trans(b_q))                                                                                   
+790                   b_p = tl.exp(b_s - b_lse[None, :])                                                                                 
+791                   b_p = tl.where((i >= (i_s * BS + tl.arange(0, BS)))[:, None], b_p, 0)                                              
+792                   # [BS, G] @ [G, BV] -> [BS, BV]                                                                                    
+793                   b_dv += tl.dot(b_p.to(b_do.dtype), b_do)                                                                           
+794                   # [BS, BV] @ [BV, G] -> [BS, G]                                                                                    
+795                   b_dp = tl.dot(b_v, tl.trans(b_do))                                                                                 
+796                   # [BS, G]                                                                                                          
+797                   b_ds = b_p * (b_dp - b_delta[None, :])                                                                             
+798                   # [BS, G] @ [G, BK] -> [BS, BK]                                                                                    
+799                   b_dk += tl.dot(b_ds.to(b_q.dtype), b_q)                                                                            
+800                                                                                                                                      
+801           tl.store(p_dk, b_dk.to(p_dk.dtype.element_ty), boundary_check=(0, 1))                                                      
+802           tl.store(p_dv, b_dv.to(p_dv.dtype.element_ty), boundary_check=(0, 1))                                                      
+803                                                                                                                                      
+804                                                                                                                                      
+805       def parallel_nsa_compression_fwd(                                                                                              
+806           q: torch.Tensor,                                                                                                           
+807           k: torch.Tensor,                                                                                                           
+808           v: torch.Tensor,                                                                                                           
+809           block_size: int,                                                                                                           
+810           scale: float,                                                                                                              
+811           offsets: Optional[torch.LongTensor] = None,                                                                                
+812           token_indices: Optional[torch.LongTensor] = None,                                                                          
+813       ):                                                                                                                             
+814           B, T, HQ, K, V = *q.shape, v.shape[-1]                                                                                     
+815           H = k.shape[2]                                                                                                             
+816           G = HQ // H                                                                                                                
+817           BC = BS = block_size                                                                                                       
+818           if torch.cuda.get_device_capability()[0] >= 9:                                                                             
+819               BK = min(256, triton.next_power_of_2(K))                                                                               
+820               BV = min(256, triton.next_power_of_2(V))                                                                               
+821           else:                                                                                                                      
+822               BK = min(128, triton.next_power_of_2(K))                                                                               
+823               BV = min(128, triton.next_power_of_2(V))                                                                               
+824           NK = triton.cdiv(K, BK)                                                                                                    
+825           NV = triton.cdiv(V, BV)                                                                                                    
+826           assert NK == 1, "The key dimension can not be larger than 256"                                                             
+827                                                                                                                                      
+828           chunk_offsets = prepare_chunk_offsets(offsets, BS) if offsets is not None else None                                        
+829                                                                                                                                      
+830           grid = (T, NV, B * H)                                                                                                      
+831           o = torch.empty(B, T, HQ, V, dtype=v.dtype, device=q.device)                                                               
+832           lse = torch.empty(B, T, HQ, dtype=torch.float, device=q.device)                                                            
+833                                                                                                                                      
+834           parallel_nsa_compression_fwd_kernel[grid](                                                                                 
+835               q=q,                                                                                                                   
+836               k=k,                                                                                                                   
+837               v=v,                                                                                                                   
+838               o=o,                                                                                                                   
+839               lse=lse,                                                                                                               
+840               scale=scale,                                                                                                           
+841               offsets=offsets,                                                                                                       
+842               token_indices=token_indices,                                                                                           
+843               chunk_offsets=chunk_offsets,                                                                                           
+844               T=T,                                                                                                                   
+845               H=H,                                                                                                                   
+846               HQ=HQ,                                                                                                                 
+847               G=G,                                                                                                                   
+848               K=K,                                                                                                                   
+849               V=V,                                                                                                                   
+850               BC=BC,                                                                                                                 
+851               BS=BS,                                                                                                                 
+852               BK=BK,                                                                                                                 
+853               BV=BV,                                                                                                                 
+854           )                                                                                                                          
+855           return o, lse                                                                                                              
+856                                                                                                                                      
+857                                                                                                                                      
+858       def parallel_nsa_compression_bwd(                                                                                              
+859           q: torch.Tensor,                                                                                                           
+860           k: torch.Tensor,                                                                                                           
+861           v: torch.Tensor,                                                                                                           
+862           o: torch.Tensor,                                                                                                           
+863           lse: torch.Tensor,                                                                                                         
+864           do: torch.Tensor,                                                                                                          
+865           block_size: int = 64,                                                                                                      
+866           scale: float = None,                                                                                                       
+867           offsets: Optional[torch.LongTensor] = None,                                                                                
+868           token_indices: Optional[torch.LongTensor] = None,                                                                          
+869       ):                                                                                                                             
+870           B, T, HQ, K, V = *q.shape, v.shape[-1]                                                                                     
+871           H = k.shape[2]                                                                                                             
+872           G = HQ // H                                                                                                                
+873           BC = BS = block_size                                                                                                       
+874           BK = triton.next_power_of_2(K)                                                                                             
+875           BV = min(128, triton.next_power_of_2(v.shape[-1]))                                                                         
+876           NV = triton.cdiv(V, BV)                                                                                                    
+877           if offsets is not None:                                                                                                    
+878               lens = prepare_lens(offsets)                                                                                           
+879               chunk_indices = torch.cat([torch.arange(n) for n in triton.cdiv(triton.cdiv(lens, BS), BC).tolist()])                  
+880               chunk_indices = torch.stack([chunk_indices.eq(0).cumsum(0) - 1, chunk_indices], 1).to(offsets)                         
+881               chunk_offsets = prepare_chunk_offsets(offsets, BS)                                                                     
+882               NC = len(chunk_indices)                                                                                                
+883           else:                                                                                                                      
+884               chunk_indices, chunk_offsets = None, None                                                                              
+885               NC = triton.cdiv(triton.cdiv(T, BS), BC)                                                                               
+886                                                                                                                                      
+887           delta = parallel_nsa_bwd_preprocess(o, do)                                                                                 
+888                                                                                                                                      
+889           dq = torch.empty(NV, *q.shape, dtype=q.dtype if NV == 1 else torch.float, device=q.device)                                 
+890           grid = (T, NV, B * H)                                                                                                      
+891           parallel_nsa_compression_bwd_kernel_dq[grid](                                                                              
+892               q=q,                                                                                                                   
+893               k=k,                                                                                                                   
+894               v=v,                                                                                                                   
+895               lse=lse,                                                                                                               
+896               delta=delta,                                                                                                           
+897               do=do,                                                                                                                 
+898               dq=dq,                                                                                                                 
+899               scale=scale,                                                                                                           
+900               offsets=offsets,                                                                                                       
+901               token_indices=token_indices,                                                                                           
+902               chunk_offsets=chunk_offsets,                                                                                           
+903               T=T,                                                                                                                   
+904               B=B,                                                                                                                   
+905               H=H,                                                                                                                   
+906               HQ=HQ,                                                                                                                 
+907               G=G,                                                                                                                   
+908               K=K,                                                                                                                   
+909               V=V,                                                                                                                   
+910               BC=BC,                                                                                                                 
+911               BS=BS,                                                                                                                 
+912               BK=BK,                                                                                                                 
+913               BV=BV                                                                                                                  
+914           )                                                                                                                          
+915           dq = dq.sum(0)                                                                                                             
+916                                                                                                                                      
+917           dk = torch.empty(NV, *k.shape, dtype=k.dtype if NV == 1 else torch.float, device=q.device)                                 
+918           dv = torch.empty(v.shape, dtype=v.dtype, device=q.device)                                                                  
+919                                                                                                                                      
+920           grid = (NV, NC, B * H)                                                                                                     
+921           parallel_nsa_compression_bwd_kernel_dkv[grid](                                                                             
+922               q=q,                                                                                                                   
+923               k=k,                                                                                                                   
+924               v=v,                                                                                                                   
+925               lse=lse,                                                                                                               
+926               delta=delta,                                                                                                           
+927               do=do,                                                                                                                 
+928               dk=dk,                                                                                                                 
+929               dv=dv,                                                                                                                 
+930               offsets=offsets,                                                                                                       
+931               chunk_indices=chunk_indices,                                                                                           
+932               chunk_offsets=chunk_offsets,                                                                                           
+933               scale=scale,                                                                                                           
+934               T=T,                                                                                                                   
+935               B=B,                                                                                                                   
+936               H=H,                                                                                                                   
+937               HQ=HQ,                                                                                                                 
+938               G=G,                                                                                                                   
+939               K=K,                                                                                                                   
+940               V=V,                                                                                                                   
+941               BC=BC,                                                                                                                 
+942               BS=BS,                                                                                                                 
+943               BK=BK,                                                                                                                 
+944               BV=BV                                                                                                                  
+945           )                                                                                                                          
+946           dk = dk.sum(0)                                                                                                             
+947           return dq, dk, dv                                                                                                          
+948                                                                                                                                      
+949                                                                                                                                      
+950       class ParallelNSACompressionFunction(torch.autograd.Function):                                                                 
+951                                                                                                                                      
+952           @staticmethod                                                                                                              
+953           @contiguous                                                                                                                
+954           @autocast_custom_fwd                                                                                                       
+955           def forward(                                                                                                               
+956               ctx,                                                                                                                   
+957               q,                                                                                                                     
+958               k,                                                                                                                     
+959               v,                                                                                                                     
+960               block_size,                                                                                                            
+961               scale,                                                                                                                 
+962               offsets                                                                                                                
+963           ):                                                                                                                         
+964               ctx.dtype = q.dtype                                                                                                    
+965                                                                                                                                      
+966               # 2-d sequence indices denoting the offsets of tokens in each sequence                                                 
+967               # for example, if the passed `offsets` is [0, 2, 6],                                                                   
+968               # then there are 2 and 4 tokens in the 1st and 2nd sequences respectively, and `token_indices` will be                 
+969               # [[0, 0], [0, 1], [1, 0], [1, 1], [1, 2], [1, 3]]                                                                     
+970               token_indices = prepare_token_indices(offsets) if offsets is not None else None                                        
+971                                                                                                                                      
+972               o, lse = parallel_nsa_compression_fwd(                                                                                 
+973                   q=q,                                                                                                               
+974                   k=k,                                                                                                               
+975                   v=v,                                                                                                               
+976                   block_size=block_size,                                                                                             
+977                   scale=scale,                                                                                                       
+978                   offsets=offsets,                                                                                                   
+979                   token_indices=token_indices                                                                                        
+980               )                                                                                                                      
+981               ctx.save_for_backward(q, k, v, o, lse)                                                                                 
+982               ctx.offsets = offsets                                                                                                  
+983               ctx.token_indices = token_indices                                                                                      
+984               ctx.block_size = block_size                                                                                            
+985               ctx.scale = scale                                                                                                      
+986               return o.to(q.dtype), lse                                                                                              
+987                                                                                                                                      
+988           @staticmethod                                                                                                              
+989           @contiguous                                                                                                                
+990           @autocast_custom_bwd                                                                                                       
+991           def backward(ctx, do, *args):                                                                                              
+992               q, k, v, o, lse = ctx.saved_tensors                                                                                    
+993               dq, dk, dv = parallel_nsa_compression_bwd(                                                                             
+994                   q=q,                                                                                                               
+995                   k=k,                                                                                                               
+996                   v=v,                                                                                                               
+997                   o=o,                                                                                                               
+998                   lse=lse,                                                                                                           
+999                   do=do,                                                                                                             
+1000                  block_size=ctx.block_size,                                                                                         
+1001                  scale=ctx.scale,                                                                                                   
+1002                  offsets=ctx.offsets,                                                                                               
+1003                  token_indices=ctx.token_indices                                                                                    
+1004              )                                                                                                                      
+1005              return dq.to(q), dk.to(k), dv.to(v), None, None, None                                                                  
+1006                                                                                                                                     
+1007                                                                                                                                     
+1008      def parallel_nsa_topk(                                                                                                         
+1009          q: torch.Tensor,                                                                                                           
+1010          k: torch.Tensor,                                                                                                           
+1011          lse: torch.Tensor,                                                                                                         
+1012          block_counts: Union[torch.LongTensor, int],                                                                                
+1013          block_size: int = 64,                                                                                                      
+1014          scale: float = None,                                                                                                       
+1015          offsets: Optional[torch.LongTensor] = None,                                                                                
+1016      ) -> torch.LongTensor:                                                                                                         
+1017          B, T, HQ, K = q.shape                                                                                                      
+1018          H = k.shape[2]                                                                                                             
+1019          G = HQ // H                                                                                                                
+1020          S = block_counts if isinstance(block_counts, int) else block_counts.max().item()                                           
+1021          S = triton.next_power_of_2(S)                                                                                              
+1022          # here we set BC = BS, but beware that they are actually decoupled                                                         
+1023          BC = BS = block_size                                                                                                       
+1024          BK = triton.next_power_of_2(K)                                                                                             
+1025                                                                                                                                     
+1026          block_indices = torch.zeros(B, T, H, S, dtype=torch.int32, device=q.device)                                                
+1027          token_indices = prepare_token_indices(offsets) if offsets is not None else None                                            
+1028          chunk_offsets = prepare_chunk_offsets(offsets, BS) if offsets is not None else None                                        
+1029          grid = (T, B * H)                                                                                                          
+1030          parallel_nsa_kernel_topk[grid](                                                                                            
+1031              q=q,                                                                                                                   
+1032              k=k,                                                                                                                   
+1033              lse=lse,                                                                                                               
+1034              scale=scale,                                                                                                           
+1035              block_indices=block_indices,                                                                                           
+1036              offsets=offsets,                                                                                                       
+1037              token_indices=token_indices,                                                                                           
+1038              chunk_offsets=chunk_offsets,                                                                                           
+1039              T=T,                                                                                                                   
+1040              H=H,                                                                                                                   
+1041              HQ=HQ,                                                                                                                 
+1042              G=G,                                                                                                                   
+1043              K=K,                                                                                                                   
+1044              S=S,                                                                                                                   
+1045              BC=BC,                                                                                                                 
+1046              BS=BS,                                                                                                                 
+1047              BK=BK                                                                                                                  
+1048          )                                                                                                                          
+1049          return block_indices                                                                                                       
+1050                                                                                                                                     
+1051                                                                                                                                     
+1052      def parallel_nsa_fwd(                                                                                                          
+1053          q: torch.Tensor,                                                                                                           
+1054          k: torch.Tensor,                                                                                                           
+1055          v: torch.Tensor,                                                                                                           
+1056          block_indices: torch.LongTensor,                                                                                           
+1057          block_counts: Union[torch.LongTensor, int],                                                                                
+1058          block_size: int,                                                                                                           
+1059          scale: float,                                                                                                              
+1060          offsets: Optional[torch.LongTensor] = None,                                                                                
+1061          token_indices: Optional[torch.LongTensor] = None,                                                                          
+1062      ):                                                                                                                             
+1063          B, T, H, K, V, S = *k.shape, v.shape[-1], block_indices.shape[-1]                                                          
+1064          HQ = q.shape[2]                                                                                                            
+1065          G = HQ // H                                                                                                                
+1066          BS = block_size                                                                                                            
+1067          if torch.cuda.get_device_capability()[0] >= 9:                                                                             
+1068              BK = min(256, triton.next_power_of_2(K))                                                                               
+1069              BV = min(256, triton.next_power_of_2(V))                                                                               
+1070          else:                                                                                                                      
+1071              BK = min(128, triton.next_power_of_2(K))                                                                               
+1072              BV = min(128, triton.next_power_of_2(V))                                                                               
+1073          NK = triton.cdiv(K, BK)                                                                                                    
+1074          NV = triton.cdiv(V, BV)                                                                                                    
+1075          assert NK == 1, "The key dimension can not be larger than 256"                                                             
+1076                                                                                                                                     
+1077          grid = (T, NV, B * H)                                                                                                      
+1078          o = torch.empty(B, T, HQ, V, dtype=v.dtype, device=q.device)                                                               
+1079          lse = torch.empty(B, T, HQ, dtype=torch.float, device=q.device)                                                            
+1080                                                                                                                                     
+1081          parallel_nsa_fwd_kernel[grid](                                                                                             
+1082              q=q,                                                                                                                   
+1083              k=k,                                                                                                                   
+1084              v=v,                                                                                                                   
+1085              o=o,                                                                                                                   
+1086              lse=lse,                                                                                                               
+1087              scale=scale,                                                                                                           
+1088              block_indices=block_indices,                                                                                           
+1089              block_counts=block_counts,                                                                                             
+1090              offsets=offsets,                                                                                                       
+1091              token_indices=token_indices,                                                                                           
+1092              T=T,                                                                                                                   
+1093              H=H,                                                                                                                   
+1094              HQ=HQ,                                                                                                                 
+1095              G=G,                                                                                                                   
+1096              K=K,                                                                                                                   
+1097              V=V,                                                                                                                   
+1098              S=S,                                                                                                                   
+1099              BS=BS,                                                                                                                 
+1100              BK=BK,                                                                                                                 
+1101              BV=BV,                                                                                                                 
+1102          )                                                                                                                          
+1103          return o, lse                                                                                                              
+1104                                                                                                                                     
+1105                                                                                                                                     
+1106      def parallel_nsa_block_mask(                                                                                                   
+1107          block_indices: torch.LongTensor,                                                                                           
+1108          block_counts: Union[torch.LongTensor, int],                                                                                
+1109          offsets: torch.LongTensor,                                                                                                 
+1110          block_size: int,                                                                                                           
+1111      ):                                                                                                                             
+1112          B, T, H, S = block_indices.shape                                                                                           
+1113          BS = block_size                                                                                                            
+1114          if offsets is not None:                                                                                                    
+1115              NS = triton.cdiv(prepare_lens(offsets).max().item(), BS)                                                               
+1116          else:                                                                                                                      
+1117              NS = triton.cdiv(T, BS)                                                                                                
+1118          block_mask = torch.zeros(B, T, H, NS, dtype=torch.bool, device=block_indices.device)                                       
+1119                                                                                                                                     
+1120          parallel_nsa_kernel_mask[(T, B, H*S)](                                                                                     
+1121              block_indices=block_indices,                                                                                           
+1122              block_counts=block_counts,                                                                                             
+1123              block_mask=block_mask,                                                                                                 
+1124              T=T,                                                                                                                   
+1125              H=H,                                                                                                                   
+1126              S=S,                                                                                                                   
+1127              BS=BS,                                                                                                                 
+1128              NS=NS                                                                                                                  
+1129          )                                                                                                                          
+1130          return block_mask                                                                                                          
+1131                                                                                                                                     
+1132                                                                                                                                     
+1133      def parallel_nsa_bwd_preprocess(                                                                                               
+1134          o: torch.Tensor,                                                                                                           
+1135          do: torch.Tensor                                                                                                           
+1136      ):                                                                                                                             
+1137          V = o.shape[-1]                                                                                                            
+1138          delta = torch.empty_like(o[..., 0], dtype=torch.float32)                                                                   
+1139          parallel_nsa_bwd_kernel_preprocess[(delta.numel(),)](                                                                      
+1140              o=o,                                                                                                                   
+1141              do=do,                                                                                                                 
+1142              delta=delta,                                                                                                           
+1143              B=triton.next_power_of_2(V),                                                                                           
+1144              V=V,                                                                                                                   
+1145          )                                                                                                                          
+1146          return delta                                                                                                               
+1147                                                                                                                                     
+1148                                                                                                                                     
+1149      def parallel_nsa_bwd(                                                                                                          
+1150          q: torch.Tensor,                                                                                                           
+1151          k: torch.Tensor,                                                                                                           
+1152          v: torch.Tensor,                                                                                                           
+1153          o: torch.Tensor,                                                                                                           
+1154          lse: torch.Tensor,                                                                                                         
+1155          do: torch.Tensor,                                                                                                          
+1156          block_indices: torch.Tensor,                                                                                               
+1157          block_counts: Union[torch.LongTensor, int],                                                                                
+1158          block_size: int = 64,                                                                                                      
+1159          scale: float = None,                                                                                                       
+1160          offsets: Optional[torch.LongTensor] = None,                                                                                
+1161          token_indices: Optional[torch.LongTensor] = None,                                                                          
+1162      ):                                                                                                                             
+1163          B, T, H, K, V, S = *k.shape, v.shape[-1], block_indices.shape[-1]                                                          
+1164          HQ = q.shape[2]                                                                                                            
+1165          G = HQ // H                                                                                                                
+1166          BS = block_size                                                                                                            
+1167          BK = triton.next_power_of_2(K)                                                                                             
+1168          BV = min(128, triton.next_power_of_2(v.shape[-1]))                                                                         
+1169          NV = triton.cdiv(V, BV)                                                                                                    
+1170                                                                                                                                     
+1171          delta = parallel_nsa_bwd_preprocess(o, do)                                                                                 
+1172                                                                                                                                     
+1173          dq = torch.empty(NV, *q.shape, dtype=q.dtype if NV == 1 else torch.float, device=q.device)                                 
+1174          grid = (T, NV, B * H)                                                                                                      
+1175          parallel_nsa_bwd_kernel_dq[grid](                                                                                          
+1176              q=q,                                                                                                                   
+1177              k=k,                                                                                                                   
+1178              v=v,                                                                                                                   
+1179              lse=lse,                                                                                                               
+1180              delta=delta,                                                                                                           
+1181              do=do,                                                                                                                 
+1182              dq=dq,                                                                                                                 
+1183              block_indices=block_indices,                                                                                           
+1184              block_counts=block_counts,                                                                                             
+1185              offsets=offsets,                                                                                                       
+1186              token_indices=token_indices,                                                                                           
+1187              scale=scale,                                                                                                           
+1188              T=T,                                                                                                                   
+1189              B=B,                                                                                                                   
+1190              H=H,                                                                                                                   
+1191              HQ=HQ,                                                                                                                 
+1192              G=G,                                                                                                                   
+1193              K=K,                                                                                                                   
+1194              V=V,                                                                                                                   
+1195              S=S,                                                                                                                   
+1196              BS=BS,                                                                                                                 
+1197              BK=BK,                                                                                                                 
+1198              BV=BV                                                                                                                  
+1199          )                                                                                                                          
+1200          dq = dq.sum(0)                                                                                                             
+1201                                                                                                                                     
+1202          if offsets is not None:                                                                                                    
+1203              chunk_indices = prepare_chunk_indices(offsets, BS)                                                                     
+1204              NS = len(chunk_indices)                                                                                                
+1205          else:                                                                                                                      
+1206              chunk_indices = None                                                                                                   
+1207              NS = triton.cdiv(T, BS)                                                                                                
+1208                                                                                                                                     
+1209          # [B, T, H, M]                                                                                                             
+1210          block_mask = parallel_nsa_block_mask(block_indices, block_counts, offsets, block_size)                                     
+1211          dk = torch.empty(NV, *k.shape, dtype=k.dtype if NV == 1 else torch.float, device=q.device)                                 
+1212          dv = torch.empty(v.shape, dtype=v.dtype, device=q.device)                                                                  
+1213                                                                                                                                     
+1214          grid = (NV, NS, B * H)                                                                                                     
+1215          parallel_nsa_bwd_kernel_dkv[grid](                                                                                         
+1216              q=q,                                                                                                                   
+1217              k=k,                                                                                                                   
+1218              v=v,                                                                                                                   
+1219              lse=lse,                                                                                                               
+1220              delta=delta,                                                                                                           
+1221              do=do,                                                                                                                 
+1222              dk=dk,                                                                                                                 
+1223              dv=dv,                                                                                                                 
+1224              block_mask=block_mask,                                                                                                 
+1225              offsets=offsets,                                                                                                       
+1226              chunk_indices=chunk_indices,                                                                                           
+1227              scale=scale,                                                                                                           
+1228              T=T,                                                                                                                   
+1229              B=B,                                                                                                                   
+1230              H=H,                                                                                                                   
+1231              HQ=HQ,                                                                                                                 
+1232              G=G,                                                                                                                   
+1233              K=K,                                                                                                                   
+1234              V=V,                                                                                                                   
+1235              M=block_mask.shape[-1],                                                                                                
+1236              BS=BS,                                                                                                                 
+1237              BK=BK,                                                                                                                 
+1238              BV=BV                                                                                                                  
+1239          )                                                                                                                          
+1240          dk = dk.sum(0)                                                                                                             
+1241          return dq, dk, dv                                                                                                          
+1242                                                                                                                                     
+1243                                                                                                                                     
+1244      @torch.compile                                                                                                                 
+1245      class ParallelNSAFunction(torch.autograd.Function):                                                                            
+1246                                                                                                                                     
+1247          @staticmethod                                                                                                              
+1248          @contiguous                                                                                                                
+1249          @autocast_custom_fwd                                                                                                       
+1250          def forward(ctx, q, k, v, block_indices, block_counts, block_size, scale, offsets):                                        
+1251              ctx.dtype = q.dtype                                                                                                    
+1252                                                                                                                                     
+1253              # 2-d sequence indices denoting the offsets of tokens in each sequence                                                 
+1254              # for example, if the passed `offsets` is [0, 2, 6],                                                                   
+1255              # then there are 2 and 4 tokens in the 1st and 2nd sequences respectively, and `token_indices` will be                 
+1256              # [[0, 0], [0, 1], [1, 0], [1, 1], [1, 2], [1, 3]]                                                                     
+1257              token_indices = prepare_token_indices(offsets) if offsets is not None else None                                        
+1258                                                                                                                                     
+1259              o, lse = parallel_nsa_fwd(                                                                                             
+1260                  q=q,                                                                                                               
+1261                  k=k,                                                                                                               
+1262                  v=v,                                                                                                               
+1263                  block_indices=block_indices,                                                                                       
+1264                  block_counts=block_counts,                                                                                         
+1265                  block_size=block_size,                                                                                             
+1266                  scale=scale,                                                                                                       
+1267                  offsets=offsets,                                                                                                   
+1268                  token_indices=token_indices                                                                                        
+1269              )                                                                                                                      
+1270              ctx.save_for_backward(q, k, v, o, lse)                                                                                 
+1271              ctx.block_indices = block_indices                                                                                      
+1272              ctx.block_counts = block_counts                                                                                        
+1273              ctx.offsets = offsets                                                                                                  
+1274              ctx.token_indices = token_indices                                                                                      
+1275              ctx.block_size = block_size                                                                                            
+1276              ctx.scale = scale                                                                                                      
+1277              return o.to(q.dtype)                                                                                                   
+1278                                                                                                                                     
+1279          @staticmethod                                                                                                              
+1280          @contiguous                                                                                                                
+1281          @autocast_custom_bwd                                                                                                       
+1282          def backward(ctx, do):                                                                                                     
+1283              q, k, v, o, lse = ctx.saved_tensors                                                                                    
+1284              dq, dk, dv = parallel_nsa_bwd(                                                                                         
+1285                  q=q,                                                                                                               
+1286                  k=k,                                                                                                               
+1287                  v=v,                                                                                                               
+1288                  o=o,                                                                                                               
+1289                  lse=lse,                                                                                                           
+1290                  do=do,                                                                                                             
+1291                  block_indices=ctx.block_indices,                                                                                   
+1292                  block_counts=ctx.block_counts,                                                                                     
+1293                  block_size=ctx.block_size,                                                                                         
+1294                  scale=ctx.scale,                                                                                                   
+1295                  offsets=ctx.offsets,                                                                                               
+1296                  token_indices=ctx.token_indices                                                                                    
+1297              )                                                                                                                      
+1298              return dq.to(q), dk.to(k), dv.to(v), None, None, None, None, None, None, None, None                                    
+1299                                                                                                                                     
+1300                                                                                                                                     
+1301      def parallel_nsa_compression(                                                                                                  
+1302          q: torch.Tensor,                                                                                                           
+1303          k: torch.Tensor,                                                                                                           
+1304          v: torch.Tensor,                                                                                                           
+1305          block_size: int = 64,                                                                                                      
+1306          scale: float = None,                                                                                                       
+1307          offsets: Optional[torch.LongTensor] = None                                                                                 
+1308      ):                                                                                                                             
+1309          return ParallelNSACompressionFunction.apply(                                                                               
+1310              q,                                                                                                                     
+1311              k,                                                                                                                     
+1312              v,                                                                                                                     
+1313              block_size,                                                                                                            
+1314              scale,                                                                                                                 
+1315              offsets                                                                                                                
+1316          )                                                                                                                          
+1317                                                                                                                                     
+1318                                                                                                                                     
+1319      def parallel_nsa(                                                                                                              
+1320          q: torch.Tensor,                                                                                                           
+1321          k: torch.Tensor,                                                                                                           
+1322          v: torch.Tensor,                                                                                                           
+1323          g_cmp: torch.Tensor,                                                                                                       
+1324          g_slc: torch.Tensor,                                                                                                       
+1325          g_swa: torch.Tensor,                                                                                                       
+1326          block_indices: Optional[torch.LongTensor] = None,                                                                          
+1327          block_counts: Union[torch.LongTensor, int] = 16,                                                                           
+1328          block_size: int = 64,                                                                                                      
+1329          window_size: int = 0,                                                                                                      
+1330          scale: Optional[float] = None,                                                                                             
+1331          cu_seqlens: Optional[torch.LongTensor] = None,                                                                             
+1332          head_first: bool = False                                                                                                   
+1333      ) -> torch.Tensor:                                                                                                             
+1334          r"""                                                                                                                       
+1335          Args:                                                                                                                      
+1336              q (torch.Tensor):                                                                                                      
+1337                  queries of shape `[B, T, HQ, K]` if `head_first=False` else `[B, HQ, T, K]`.                                       
+1338              k (torch.Tensor):                                                                                                      
+1339                  keys of shape `[B, T, H, K]` if `head_first=False` else `[B, H, T, K]`.                                            
+1340                  GQA is enforced here. The ratio of query heads (HQ) to key/value heads (H) must be a power of 2 and >=16.          
+1341              v (torch.Tensor):                                                                                                      
+1342                  values of shape `[B, T, H, V]` if `head_first=False` else `[B, H, T, V]`.                                          
+1343              g_cmp (torch.Tensor):                                                                                                  
+1344                  Gate score for compressed attention of shape `[B, T, HQ]` if  `head_first=False` else `[B, HQ, T]`.                
+1345              g_slc (torch.Tensor):                                                                                                  
+1346                  Gate score for selected attention of shape `[B, T, HQ]` if  `head_first=False` else `[B, HQ, T]`.                  
+1347              g_swa (torch.Tensor):                                                                                                  
+1348                  Gate score for sliding attentionof shape `[B, T, HQ]` if  `head_first=False` else `[B, HQ, T]`.                    
+1349              block_indices (torch.LongTensor):                                                                                      
+1350                  Block indices of shape `[B, T, H, S]` if `head_first=False` else `[B, H, T, S]`.                                   
+1351                  `S` is the number of selected blocks for each query token, which is set to 16 in the paper.                        
+1352                  If `g_cmp` is provided, the passed `block_indices` will be ignored.                                                
+1353              block_counts (Optional[Union[torch.LongTensor, int]]):                                                                 
+1354                  Number of selected blocks for each query.                                                                          
+1355                  If a tensor is provided, with shape `[B, T, H]` if `head_first=False` else `[B, H, T]`,                            
+1356                  each query can select the same number of blocks.                                                                   
+1357                  If not provided, it will default to 16.                                                                            
+1358              block_size (int):                                                                                                      
+1359                  Selected block size. Default: 64.                                                                                  
+1360              window_size (int):                                                                                                     
+1361                  Sliding window size. Default: 0.                                                                                   
+1362              scale (Optional[int]):                                                                                                 
+1363                  Scale factor for attention scores.                                                                                 
+1364                  If not provided, it will default to `1 / sqrt(K)`. Default: `None`.                                                
+1365              head_first (Optional[bool]):                                                                                           
+1366                  Whether the inputs are in the head-first format. Default: `False`.                                                 
+1367              cu_seqlens (torch.LongTensor):                                                                                         
+1368                  Cumulative sequence lengths of shape `[N+1]` used for variable-length training,                                    
+1369                  consistent with the FlashAttention API.                                                                            
+1370                                                                                                                                     
+1371          Returns:                                                                                                                   
+1372              o (torch.Tensor):                                                                                                      
+1373                  Outputs of shape `[B, T, HQ, V]` if `head_first=False` else `[B, HQ, T, V]`.                                       
+1374          """                                                                                                                        
+1375          assert block_counts is not None, "block counts must be provided for selection"                                             
+1376          if scale is None:                                                                                                          
+1377              scale = k.shape[-1] ** -0.5                                                                                            
+1378          if cu_seqlens is not None:                                                                                                 
+1379              assert q.shape[0] == 1, "batch size must be 1 when cu_seqlens are provided"                                            
+1380          if head_first:                                                                                                             
+1381              q, k, v = map(lambda x: rearrange(x, 'b h t d -> b t h d'), (q, k, v))                                                 
+1382              g_cmp, g_slc, g_swa = map(lambda x: rearrange(x, 'b h t -> b t h') if x is not None else None, (g_cmp, g_slc, g_swa))  
+1383              if not isinstance(block_counts, int):                                                                                  
+1384                  block_counts = rearrange(block_counts, 'b h t -> b t h')                                                           
+1385          assert q.shape[2] % (k.shape[2] * 16) == 0, "Group size must be a multiple of 16 in NSA"                                   
+1386                                                                                                                                     
+1387          k_cmp, v_cmp = mean_pooling(k, block_size, cu_seqlens), mean_pooling(v, block_size, cu_seqlens)                            
+1388          o_cmp, lse_cmp = None, None                                                                                                
+1389          if g_cmp is not None:                                                                                                      
+1390              o_cmp, lse_cmp = parallel_nsa_compression(                                                                             
+1391                  q=q,                                                                                                               
+1392                  k=k_cmp,                                                                                                           
+1393                  v=v_cmp,                                                                                                           
+1394                  block_size=block_size,                                                                                             
+1395                  scale=scale,                                                                                                       
+1396                  offsets=cu_seqlens                                                                                                 
+1397              )                                                                                                                      
+1398              if block_indices is not None:                                                                                          
+1399                  warnings.warn("`block_indices` will be ignored when `g_cmp` is provided")                                          
+1400              block_indices = parallel_nsa_topk(                                                                                     
+1401                  q=q,                                                                                                               
+1402                  k=k_cmp,                                                                                                           
+1403                  lse=lse_cmp,                                                                                                       
+1404                  block_counts=block_counts,                                                                                         
+1405                  block_size=block_size,                                                                                             
+1406                  scale=scale,                                                                                                       
+1407                  offsets=cu_seqlens                                                                                                 
+1408              )                                                                                                                      
+1409          o_slc = ParallelNSAFunction.apply(q, k, v, block_indices, block_counts, block_size, scale, cu_seqlens)                     
+1410          o = o_slc * g_slc.unsqueeze(-1)                                                                                            
+1411          if o_cmp is not None:                                                                                                      
+1412              o = torch.addcmul(o, o_cmp, g_cmp.unsqueeze(-1))                                                                       
+1413          if window_size > 0:                                                                                                        
+1414              if cu_seqlens is not None:                                                                                             
+1415                  max_seqlen = q.shape[1]                                                                                            
+1416                  o_swa = flash_attn_varlen_func(                                                                                    
+1417                      q.squeeze(0), k.squeeze(0), v.squeeze(0),                                                                      
+1418                      cu_seqlens_q=cu_seqlens,                                                                                       
+1419                      cu_seqlens_k=cu_seqlens,                                                                                       
+1420                      max_seqlen_q=max_seqlen,                                                                                       
+1421                      max_seqlen_k=max_seqlen,                                                                                       
+1422                      causal=True,                                                                                                   
+1423                      window_size=(window_size-1, 0)                                                                                 
+1424                  ).unsqueeze(0)                                                                                                     
+1425              else:                                                                                                                  
+1426                  o_swa = flash_attn_func(                                                                                           
+1427                      q, k, v,                                                                                                       
+1428                      causal=True,                                                                                                   
+1429                      window_size=(window_size-1, 0)                                                                                 
+1430                  )                                                                                                                  
+1431              o = torch.addcmul(o, o_swa, g_swa.unsqueeze(-1))                                                                       
+1432          if head_first:                                                                                                             
+1433              o = rearrange(o, 'b t h d -> b h t d')                                                                                 
+1434          return o                                                                                                                   

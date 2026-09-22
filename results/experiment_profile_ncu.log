@@ -1,0 +1,6 @@
+==PROF== Connected to process 419 (/usr/bin/python3.12)
+==PROF== Profiling "parallel_nsa_fwd_kernel" - 0 (1/3): 0%....50%....100% - 16 passes
+==PROF== Profiling "parallel_nsa_fwd_kernel" - 1 (2/3): 0%....50%....100% - 16 passes
+==PROF== Profiling "parallel_nsa_fwd_kernel" - 2 (3/3): 0%....50%....100% - 16 passes
+==PROF== Disconnected from process 419
+==PROF== Report: /mnt/c/Users/Owner/Documents/Codex/2026-09-19/fe/outputs/nsa-lab/results/experiment_profile.ncu-rep

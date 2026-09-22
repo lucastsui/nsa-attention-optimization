@@ -1,0 +1,53 @@
+{
+  "timestamp_utc": "2026-09-22T03:10:07.297943+00:00",
+  "runs": [
+    {
+      "control": "valid",
+      "command": [
+        "/usr/local/cuda-12.8/bin/compute-sanitizer",
+        "--tool",
+        "memcheck",
+        "--error-exitcode",
+        "97",
+        "--kernel-name",
+        "kns=parallel_nsa_fwd_kernel",
+        "--target-processes",
+        "all",
+        "--log-file",
+        "/mnt/c/Users/Owner/Documents/Codex/2026-09-19/fe/outputs/nsa-lab/results/sanitizer_control_valid.log",
+        "bash",
+        "/mnt/c/Users/Owner/Documents/Codex/2026-09-19/fe/outputs/nsa-lab/run.sh",
+        "sanitizer_probe.py"
+      ],
+      "exit_code": 0,
+      "expected_behavior_verified": true,
+      "tool_log": "sanitizer_control_valid.log",
+      "console_log": "sanitizer_control_valid_console.log"
+    },
+    {
+      "control": "invalid_read",
+      "command": [
+        "/usr/local/cuda-12.8/bin/compute-sanitizer",
+        "--tool",
+        "memcheck",
+        "--error-exitcode",
+        "97",
+        "--kernel-name",
+        "kns=parallel_nsa_fwd_kernel",
+        "--target-processes",
+        "all",
+        "--log-file",
+        "/mnt/c/Users/Owner/Documents/Codex/2026-09-19/fe/outputs/nsa-lab/results/sanitizer_control_invalid_read.log",
+        "bash",
+        "/mnt/c/Users/Owner/Documents/Codex/2026-09-19/fe/outputs/nsa-lab/run.sh",
+        "sanitizer_probe.py",
+        "--bad"
+      ],
+      "exit_code": 97,
+      "expected_behavior_verified": true,
+      "tool_log": "sanitizer_control_invalid_read.log",
+      "console_log": "sanitizer_control_invalid_read_console.log"
+    }
+  ],
+  "status": "passed"
+}

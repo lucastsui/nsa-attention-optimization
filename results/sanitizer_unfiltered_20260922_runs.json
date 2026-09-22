@@ -1,0 +1,22 @@
+{
+  "status": "completed",
+  "runs": [
+    {
+      "tool": "initcheck",
+      "command": [
+        "bash",
+        "/mnt/c/Users/Owner/Documents/Codex/2026-09-19/fe/outputs/nsa-lab/sanitize.sh",
+        "initcheck",
+        "sanitizer_unfiltered_20260922"
+      ],
+      "started_utc": "2026-09-22T03:08:21.253757+00:00",
+      "exit_code": 0,
+      "finished_utc": "2026-09-22T03:09:02.074728+00:00",
+      "console_log": "sanitizer_unfiltered_20260922_initcheck_console.log",
+      "tool_log": "sanitizer_unfiltered_20260922_initcheck.log",
+      "validation": "sanitizer_unfiltered_20260922_initcheck_validation.json",
+      "saved_session": "sanitizer_unfiltered_20260922_initcheck.san",
+      "kernel_filter": null
+    }
+  ]
+}

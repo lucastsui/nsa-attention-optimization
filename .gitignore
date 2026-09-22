@@ -1,0 +1,13 @@
+.runtime/
+.runtime-path
+__pycache__/
+*.pyc
+.venv/
+.plot-venv/
+# Keep exploratory logs locally; the curated archive manifest chooses deliverables.
+results/*interrupted*
+results/experiment_validation.json
+results/experiment_validation_remaining.json
+results/experiment_uniform_retry.json
+results/baseline_timings_initial.json
+results/debugger-interface-setup.json

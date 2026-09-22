@@ -1,0 +1,20 @@
+--- upstream/parallel_nsa_fwd_kernel
++++ candidate/parallel_nsa_fwd_kernel
+@@ -62,8 +62,6 @@
+             p_v = tl.make_block_ptr(v, (T, V), (H*V, 1), (i_s, i_v * BV), (BS, BV), (1, 0))
+             # [BK, BS]
+             b_k = tl.load(p_k, boundary_check=(0, 1))
+-            # [BS, BV]
+-            b_v = tl.load(p_v, boundary_check=(0, 1))
+             # [G, BS]
+             b_s = tl.dot(b_q, b_k)
+             b_s = tl.where((i_t >= (i_s + tl.arange(0, BS)))[None, :], b_s, float('-inf'))
+@@ -75,6 +73,8 @@
+             b_p = tl.exp(b_s - b_m[:, None])
+             # [G]
+             b_acc = b_acc * b_r + tl.sum(b_p, 1)
++            # [BS, BV]
++            b_v = tl.load(p_v, boundary_check=(0, 1))
+             # [G, BV]
+             b_o = b_o * b_r[:, None] + tl.dot(b_p.to(b_q.dtype), b_v)
+ 

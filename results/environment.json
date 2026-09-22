@@ -1,0 +1,28 @@
+{
+  "timestamp_utc": "2026-09-21T23:37:48.987989+00:00",
+  "status": "passed",
+  "python": "3.12.3",
+  "linux_kernel": "6.6.87.2-microsoft-standard-WSL2",
+  "torch": "2.8.0+cu128",
+  "torch_cuda": "12.8",
+  "triton": "3.4.0",
+  "device": "NVIDIA GeForce RTX 5090 Laptop GPU",
+  "compute_capability": [
+    12,
+    0
+  ],
+  "torch_device_memory_bytes": 25650855936,
+  "gpu_driver": "596.36",
+  "triton_vector_add": {
+    "elements": 10003,
+    "max_abs_error": 0.0,
+    "matches_torch_exactly": true
+  },
+  "bf16_matmul": {
+    "max_abs_error_vs_rounded_fp64": 0.0,
+    "relative_l2": 0.0,
+    "atol": 0.125,
+    "rtol": 0.01,
+    "relative_l2_limit": 0.005
+  }
+}

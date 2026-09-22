@@ -1,0 +1,65 @@
+{
+  "timestamp_utc": "2026-09-22T00:24:09.526304+00:00",
+  "mode": "ncu",
+  "case": {
+    "name": "n8192_g16_random",
+    "lengths": [
+      8192
+    ],
+    "group": 16,
+    "kv_heads": 4,
+    "selected_blocks": 16,
+    "pattern": "random",
+    "sampled": true
+  },
+  "input_sha256": "e803766e98876f3c6b66885302fc94c95748cccda025cee4483e72816cfec232",
+  "sources": {
+    "nsa-triton": {
+      "commit": "9bea856c911ebf263be88d797fb28458f82f1d94",
+      "modified": false
+    },
+    "fla-nsa": {
+      "commit": "bd67af59b90afa34b25f61d2922e612d10dba3bd",
+      "modified": false
+    },
+    "fsa": {
+      "commit": "1325e8dbf18e430753e2d5e41cab9c262250ee7f",
+      "modified": true,
+      "patch": "patches/fsa-pointer.patch",
+      "patch_sha256": "bd4b7984ff973e788206e174134b5483f7c400583517af5ffdba51b1c2ecafdd"
+    },
+    "fla-nsa/3rdparty/flash-linear-attention": {
+      "commit": "7a21647cf63d8ac396947300b8777767067e6269",
+      "modified": false
+    }
+  },
+  "torch": "2.8.0+cu128",
+  "triton": "3.4.0",
+  "route": "fla_selected_forward",
+  "gpu_before": {
+    "timestamp": "2026/09/21 20:24:09.563",
+    "power.draw": "9.11",
+    "power.limit": "[N/A]",
+    "temperature.gpu": "49",
+    "clocks.sm": "180",
+    "clocks.mem": "405",
+    "utilization.gpu": "2",
+    "pstate": "P0",
+    "memory.used": "472"
+  },
+  "calls": 1,
+  "warmup_calls": 1147,
+  "autotune_choice": "num_warps: 4, num_ctas: 1, num_stages: 3, maxnreg: None",
+  "gpu_after": {
+    "timestamp": "2026/09/21 20:24:20.669",
+    "power.draw": "134.37",
+    "power.limit": "[N/A]",
+    "temperature.gpu": "65",
+    "clocks.sm": "2107",
+    "clocks.mem": "9001",
+    "utilization.gpu": "76",
+    "pstate": "P4",
+    "memory.used": "876"
+  },
+  "status": "completed"
+}

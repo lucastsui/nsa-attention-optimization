@@ -1,0 +1,83 @@
+{
+  "status": "completed",
+  "consolidated_utc": "2026-09-22T03:10:15.954358+00:00",
+  "runs": [
+    {
+      "tool": "memcheck",
+      "command": [
+        "bash",
+        "/mnt/c/Users/Owner/Documents/Codex/2026-09-19/fe/outputs/nsa-lab/sanitize.sh",
+        "memcheck",
+        "sanitizer_verified_20260922"
+      ],
+      "started_utc": "2026-09-22T03:02:34.508525+00:00",
+      "exit_code": 0,
+      "finished_utc": "2026-09-22T03:03:22.150952+00:00",
+      "console_log": "sanitizer_verified_20260922_memcheck_console.log",
+      "tool_log": "sanitizer_verified_20260922_memcheck.log",
+      "validation": "sanitizer_verified_20260922_memcheck_validation.json",
+      "saved_session": "sanitizer_verified_20260922_memcheck.san",
+      "kernel_filter": "kns=parallel_nsa_fwd_kernel"
+    },
+    {
+      "tool": "racecheck",
+      "command": [
+        "bash",
+        "/mnt/c/Users/Owner/Documents/Codex/2026-09-19/fe/outputs/nsa-lab/sanitize.sh",
+        "racecheck",
+        "sanitizer_verified_20260922"
+      ],
+      "started_utc": "2026-09-22T03:03:22.153088+00:00",
+      "exit_code": 0,
+      "finished_utc": "2026-09-22T03:05:54.521375+00:00",
+      "console_log": "sanitizer_verified_20260922_racecheck_console.log",
+      "tool_log": "sanitizer_verified_20260922_racecheck.log",
+      "validation": "sanitizer_verified_20260922_racecheck_validation.json",
+      "saved_session": "sanitizer_verified_20260922_racecheck.san",
+      "kernel_filter": "kns=parallel_nsa_fwd_kernel"
+    },
+    {
+      "tool": "synccheck",
+      "command": [
+        "bash",
+        "/mnt/c/Users/Owner/Documents/Codex/2026-09-19/fe/outputs/nsa-lab/sanitize.sh",
+        "synccheck",
+        "sanitizer_verified_20260922"
+      ],
+      "started_utc": "2026-09-22T03:05:54.523039+00:00",
+      "exit_code": 0,
+      "finished_utc": "2026-09-22T03:06:36.100074+00:00",
+      "console_log": "sanitizer_verified_20260922_synccheck_console.log",
+      "tool_log": "sanitizer_verified_20260922_synccheck.log",
+      "validation": "sanitizer_verified_20260922_synccheck_validation.json",
+      "saved_session": "sanitizer_verified_20260922_synccheck.san",
+      "kernel_filter": "kns=parallel_nsa_fwd_kernel"
+    },
+    {
+      "tool": "initcheck",
+      "command": [
+        "bash",
+        "/mnt/c/Users/Owner/Documents/Codex/2026-09-19/fe/outputs/nsa-lab/sanitize.sh",
+        "initcheck",
+        "sanitizer_unfiltered_20260922"
+      ],
+      "started_utc": "2026-09-22T03:08:21.253757+00:00",
+      "exit_code": 0,
+      "finished_utc": "2026-09-22T03:09:02.074728+00:00",
+      "console_log": "sanitizer_unfiltered_20260922_initcheck_console.log",
+      "tool_log": "sanitizer_unfiltered_20260922_initcheck.log",
+      "validation": "sanitizer_unfiltered_20260922_initcheck_validation.json",
+      "saved_session": "sanitizer_unfiltered_20260922_initcheck.san",
+      "kernel_filter": null
+    }
+  ],
+  "diagnostic_attempts": [
+    {
+      "tool": "initcheck",
+      "exit_code": 1,
+      "terminated_early": true,
+      "log": "sanitizer_verified_20260922_initcheck.log",
+      "reason": "Filtered helper kernels left valid reduction/gather outputs untracked. Repeated with all producers instrumented; API checking remained enabled; candidate unchanged; full run clean."
+    }
+  ]
+}

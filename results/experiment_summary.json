@@ -1,0 +1,386 @@
+{
+  "sources": {
+    "nsa-triton": {
+      "commit": "9bea856c911ebf263be88d797fb28458f82f1d94",
+      "modified": false
+    },
+    "fla-nsa": {
+      "commit": "bd67af59b90afa34b25f61d2922e612d10dba3bd",
+      "modified": false
+    },
+    "fsa": {
+      "commit": "1325e8dbf18e430753e2d5e41cab9c262250ee7f",
+      "modified": true,
+      "patch": "patches/fsa-pointer.patch",
+      "patch_sha256": "bd4b7984ff973e788206e174134b5483f7c400583517af5ffdba51b1c2ecafdd"
+    },
+    "fla-nsa/3rdparty/flash-linear-attention": {
+      "commit": "7a21647cf63d8ac396947300b8777767067e6269",
+      "modified": false
+    },
+    "late_v_candidate": {
+      "source": "candidates/late_v.py",
+      "sha256": "b5cb0c8dd4e06b2a677dc2220ce4faa22cbff4167089b4ca556a76d1578a65ce",
+      "patch": "patches/fla-late-v.patch"
+    },
+    "experiment_runtime": {
+      "torchinductor_compile_threads": "1"
+    }
+  },
+  "correctness_cases": 85,
+  "max_relative_l2": 0.0024172305007676446,
+  "max_abs_error": 0.010060514777417762,
+  "cases": [
+    {
+      "name": "n4096_g16_random",
+      "median_ms": {
+        "fla": 3.624285088235143,
+        "fla_w4": 3.598961500000876,
+        "fla_w8": 3.712058424243327,
+        "late_v_w4": 2.9291690909086685,
+        "late_v_w8": 3.601629441177198
+      },
+      "throughput_ratio": 1.2373082521879404,
+      "round_comparison": {
+        "median_ratio": 1.2318765070378648,
+        "min_ratio": 1.1707208479931324,
+        "max_ratio": 1.2883403368733404,
+        "round_ratios": [
+          1.2088723738774025,
+          1.2423871987255604,
+          1.1707208479931324,
+          1.2883403368733404,
+          1.2318765070378648
+        ],
+        "rounds_faster": 5,
+        "rounds": 5
+      }
+    },
+    {
+      "name": "n4096_g16_recent",
+      "median_ms": {
+        "fla": 3.583098965519043,
+        "fla_w4": 3.638972571431103,
+        "fla_w8": 3.744138545457507,
+        "late_v_w4": 2.9468630238105624,
+        "late_v_w8": 3.571713457144402
+      },
+      "throughput_ratio": 1.2159027876652948,
+      "round_comparison": {
+        "median_ratio": 1.2156412113109578,
+        "min_ratio": 1.190053285526907,
+        "max_ratio": 1.2523594710149113,
+        "round_ratios": [
+          1.2022780047381156,
+          1.2156412113109578,
+          1.190053285526907,
+          1.2328436661074182,
+          1.2523594710149113
+        ],
+        "rounds_faster": 5,
+        "rounds": 5
+      }
+    },
+    {
+      "name": "n8192_g16_random",
+      "median_ms": {
+        "fla": 7.542697214278503,
+        "fla_w4": 7.62862321429176,
+        "fla_w8": 8.102962214284812,
+        "late_v_w4": 6.173997421061166,
+        "late_v_w8": 7.518483615373183
+      },
+      "throughput_ratio": 1.2216877818167422,
+      "round_comparison": {
+        "median_ratio": 1.1832211260830687,
+        "min_ratio": 1.1259890095609955,
+        "max_ratio": 1.3184748580778902,
+        "round_ratios": [
+          1.1832211260830687,
+          1.1259890095609955,
+          1.1830199500613223,
+          1.3184748580778902,
+          1.2070660351200202
+        ],
+        "rounds_faster": 5,
+        "rounds": 5
+      }
+    },
+    {
+      "name": "n8192_g16_recent",
+      "median_ms": {
+        "fla": 7.70070893333165,
+        "fla_w4": 7.680633266666821,
+        "fla_w8": 8.043739928585378,
+        "late_v_w4": 6.203459823529342,
+        "late_v_w8": 7.639077866663986
+      },
+      "throughput_ratio": 1.2413571059368087,
+      "round_comparison": {
+        "median_ratio": 1.2263581285379763,
+        "min_ratio": 1.1893647459005958,
+        "max_ratio": 1.249135041091677,
+        "round_ratios": [
+          1.1893647459005958,
+          1.1971925735963123,
+          1.2413571059368087,
+          1.2263581285379763,
+          1.249135041091677
+        ],
+        "rounds_faster": 5,
+        "rounds": 5
+      }
+    },
+    {
+      "name": "n16384_g16_random",
+      "median_ms": {
+        "fla": 15.71555890000127,
+        "fla_w4": 15.762673600011112,
+        "fla_w8": 16.13615269998263,
+        "late_v_w4": 12.962156000003233,
+        "late_v_w8": 15.741919399988547
+      },
+      "throughput_ratio": 1.2124185899319024,
+      "round_comparison": {
+        "median_ratio": 1.232222192602043,
+        "min_ratio": 1.1197542226666655,
+        "max_ratio": 1.2503284352380595,
+        "round_ratios": [
+          1.1197542226666655,
+          1.235345493450677,
+          1.2298535302971847,
+          1.232222192602043,
+          1.2503284352380595
+        ],
+        "rounds_faster": 5,
+        "rounds": 5
+      }
+    },
+    {
+      "name": "n16384_g16_recent",
+      "median_ms": {
+        "fla": 15.589375300010033,
+        "fla_w4": 15.7298234000109,
+        "fla_w8": 16.184525600010602,
+        "late_v_w4": 12.703317699993022,
+        "late_v_w8": 15.56478640000023
+      },
+      "throughput_ratio": 1.2271892798539232,
+      "round_comparison": {
+        "median_ratio": 1.2373786652605814,
+        "min_ratio": 1.1374310052122996,
+        "max_ratio": 1.2688609092168919,
+        "round_ratios": [
+          1.1374310052122996,
+          1.2373786652605814,
+          1.2688609092168919,
+          1.2590164155617292,
+          1.1775655201176456
+        ],
+        "rounds_faster": 5,
+        "rounds": 5
+      }
+    }
+  ],
+  "confirmation": {
+    "baseline_ms": 7.579340866671676,
+    "candidate_ms": 6.272664631577946,
+    "throughput_ratio": 1.2083127844131247,
+    "round_comparison": {
+      "median_ratio": 1.2246165312976633,
+      "min_ratio": 1.0645511854671357,
+      "max_ratio": 1.3095480891383422,
+      "round_ratios": [
+        1.113860312328965,
+        1.0645511854671357,
+        1.3095480891383422,
+        1.2485900498311453,
+        1.203372521051601,
+        1.2463027595755258,
+        1.2779302046987628,
+        1.2340739546218893,
+        1.211483199614299,
+        1.2151591079734376
+      ],
+      "rounds_faster": 10,
+      "rounds": 10
+    }
+  },
+  "target_resources": {
+    "fla": {
+      "num_warps": 4,
+      "num_stages": 3,
+      "shared_bytes": 36864,
+      "registers_per_thread": 152,
+      "spilled_registers": 0,
+      "compiled_hash": "4698f09b47a598cabc40469de416507c3b0f4176ea41e69bd11198bbff3ec36e"
+    },
+    "fla_w4": {
+      "num_warps": 4,
+      "num_stages": 3,
+      "shared_bytes": 36864,
+      "registers_per_thread": 152,
+      "spilled_registers": 0,
+      "compiled_hash": "4698f09b47a598cabc40469de416507c3b0f4176ea41e69bd11198bbff3ec36e"
+    },
+    "fla_w8": {
+      "num_warps": 8,
+      "num_stages": 3,
+      "shared_bytes": 36864,
+      "registers_per_thread": 102,
+      "spilled_registers": 0,
+      "compiled_hash": "c69c4f1ab46d90a3d669b43385a1ae572b4150461e6ae355f8bf83ae5aac6ea8"
+    },
+    "late_v_w4": {
+      "num_warps": 4,
+      "num_stages": 3,
+      "shared_bytes": 22528,
+      "registers_per_thread": 128,
+      "spilled_registers": 0,
+      "compiled_hash": "7b0cc5902d3f3468b393bc76aef40bbbd261810af8a6f05cc8ac5a959cc67737"
+    },
+    "late_v_w8": {
+      "num_warps": 8,
+      "num_stages": 3,
+      "shared_bytes": 22528,
+      "registers_per_thread": 102,
+      "spilled_registers": 0,
+      "compiled_hash": "1d92e849ea9e50d5fa92899156faefc8648fbedd9d35f4f8d05ba161c24cacee"
+    }
+  },
+  "memory_sanitizer": {
+    "passed": false,
+    "log": "experiment_memcheck.log",
+    "note": "This run could not initialize the WDDM debugger interface; numerical rechecks are separate from sanitizer instrumentation."
+  },
+  "telemetry_range": {
+    "temperature.gpu": [
+      62.0,
+      75.0
+    ],
+    "clocks.sm": [
+      1260.0,
+      2257.0
+    ],
+    "power.draw": [
+      121.09,
+      142.35
+    ]
+  },
+  "controlled_profile": {
+    "fla": {
+      "gpu__time_duration.sum": {
+        "value": "14880704",
+        "unit": "ns"
+      },
+      "gpc__cycles_elapsed.avg.per_second": {
+        "value": "1088857307.14",
+        "unit": "hz"
+      },
+      "launch__occupancy_limit_shared_mem": {
+        "value": "2",
+        "unit": "block"
+      },
+      "launch__occupancy_limit_registers": {
+        "value": "3",
+        "unit": "block"
+      },
+      "sm__warps_active.avg.pct_of_peak_sustained_active": {
+        "value": "16.59",
+        "unit": "%"
+      },
+      "lts__throughput.avg.pct_of_peak_sustained_elapsed": {
+        "value": "54.96",
+        "unit": "%"
+      },
+      "gpu__dram_throughput.avg.pct_of_peak_sustained_elapsed": {
+        "value": "3.57",
+        "unit": "%"
+      },
+      "smsp__average_warps_issue_stalled_long_scoreboard_per_issue_active.ratio": {
+        "value": "4.80",
+        "unit": "inst"
+      },
+      "smsp__average_warp_latency_per_inst_issued.ratio": {
+        "value": "13.36",
+        "unit": "cycle"
+      }
+    },
+    "fla_w8": {
+      "gpu__time_duration.sum": {
+        "value": "14955584",
+        "unit": "ns"
+      },
+      "gpc__cycles_elapsed.avg.per_second": {
+        "value": "1088224142.33",
+        "unit": "hz"
+      },
+      "launch__occupancy_limit_shared_mem": {
+        "value": "2",
+        "unit": "block"
+      },
+      "launch__occupancy_limit_registers": {
+        "value": "2",
+        "unit": "block"
+      },
+      "sm__warps_active.avg.pct_of_peak_sustained_active": {
+        "value": "33.16",
+        "unit": "%"
+      },
+      "lts__throughput.avg.pct_of_peak_sustained_elapsed": {
+        "value": "54.69",
+        "unit": "%"
+      },
+      "gpu__dram_throughput.avg.pct_of_peak_sustained_elapsed": {
+        "value": "3.54",
+        "unit": "%"
+      },
+      "smsp__average_warps_issue_stalled_long_scoreboard_per_issue_active.ratio": {
+        "value": "6.55",
+        "unit": "inst"
+      },
+      "smsp__average_warp_latency_per_inst_issued.ratio": {
+        "value": "21.33",
+        "unit": "cycle"
+      }
+    },
+    "late_v_w4": {
+      "gpu__time_duration.sum": {
+        "value": "10175648",
+        "unit": "ns"
+      },
+      "gpc__cycles_elapsed.avg.per_second": {
+        "value": "1086674774.91",
+        "unit": "hz"
+      },
+      "launch__occupancy_limit_shared_mem": {
+        "value": "4",
+        "unit": "block"
+      },
+      "launch__occupancy_limit_registers": {
+        "value": "4",
+        "unit": "block"
+      },
+      "sm__warps_active.avg.pct_of_peak_sustained_active": {
+        "value": "33.14",
+        "unit": "%"
+      },
+      "lts__throughput.avg.pct_of_peak_sustained_elapsed": {
+        "value": "80.04",
+        "unit": "%"
+      },
+      "gpu__dram_throughput.avg.pct_of_peak_sustained_elapsed": {
+        "value": "5.20",
+        "unit": "%"
+      },
+      "smsp__average_warps_issue_stalled_long_scoreboard_per_issue_active.ratio": {
+        "value": "5.53",
+        "unit": "inst"
+      },
+      "smsp__average_warp_latency_per_inst_issued.ratio": {
+        "value": "17.10",
+        "unit": "cycle"
+      }
+    }
+  }
+}

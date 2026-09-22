@@ -1,0 +1,34 @@
+{
+  "retrieved_utc": "2026-09-22T03:15:50.060072+00:00",
+  "integrated_fla": {
+    "sha": "954438d1fcb5e1bb05c22f9908de9c5c2df74ae5",
+    "date": "2026-09-21T07:11:12Z",
+    "url": "https://github.com/fla-org/flash-linear-attention/commit/954438d1fcb5e1bb05c22f9908de9c5c2df74ae5"
+  },
+  "checkpoint": {
+    "id": "zen-E/NSA-1B",
+    "revision": "3dc3694d2f873820122b094276ae626a44f00a36",
+    "weights_downloaded": false
+  },
+  "tutorial": "https://triton-lang.org/main/getting-started/tutorials/06-fused-attention.html",
+  "snapshots": {
+    "nsa1b-config.json": {
+      "sha256": "36f88a57a5d36a3d4bdc399ebe277b7ea3cceed60dd212afd90cde97015fc4bd"
+    },
+    "nsa1b-modeling_llama_nsa.py": {
+      "sha256": "6bd9dc8580ddd6f3d096dcb683a0f2fddabea325786817b6b9492d5560eea4d7"
+    },
+    "ssa-parallel.py": {
+      "sha256": "10a2793f91ff56a8b8bccb900e3a52ad597ceac5c2f50e3e9dc4033ddaa52772"
+    },
+    "fla-current.py": {
+      "sha256": "010048b19fd305303ef3170f84bfd8da5ece3731fad56244620cc8e6c22ffdeb"
+    },
+    "triton-tutorial.py": {
+      "sha256": "36eb1f04b8ae795a554c69529e8c930edc5727a43322b39e87f916c535d7ba63"
+    },
+    "checkpoint-config.json": {
+      "sha256": "a4ed895d4a58a2d2482adcfba28b857b2558f4d22eaac0301df0c06643300d24"
+    }
+  }
+}

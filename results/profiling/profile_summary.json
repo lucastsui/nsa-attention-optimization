@@ -1,0 +1,395 @@
+{
+  "profiles": {
+    "fla_8k_random_counters": {
+      "raw_file": "fla_8k_random_counters_raw.csv",
+      "launches": [
+        {
+          "kernel_duration": {
+            "value": 6.754368,
+            "unit": "ms"
+          },
+          "sm_frequency": {
+            "value": 2.664154,
+            "unit": "Ghz"
+          },
+          "l2_peak_percent": {
+            "value": 84.835372,
+            "unit": "%"
+          },
+          "dram_peak_percent": {
+            "value": 5.457835,
+            "unit": "%"
+          },
+          "sm_peak_percent": {
+            "value": 24.720845,
+            "unit": "%"
+          },
+          "tensor_active_percent": {
+            "value": 18.097409,
+            "unit": "%"
+          },
+          "l1_hit_percent": {
+            "value": 0.354717,
+            "unit": "%"
+          },
+          "l2_hit_percent": {
+            "value": 98.237542,
+            "unit": "%"
+          },
+          "occupancy_percent": {
+            "value": 16.682402,
+            "unit": "%"
+          },
+          "registers_per_thread": {
+            "value": 152.0,
+            "unit": "register/thread"
+          },
+          "shared_memory_dynamic": {
+            "value": 36.864,
+            "unit": "Kbyte/block"
+          },
+          "shared_memory_driver": {
+            "value": 1.024,
+            "unit": "Kbyte/block"
+          },
+          "long_scoreboard_cycles_per_issue": {
+            "value": 5.324535,
+            "unit": "inst"
+          },
+          "all_cycles_per_issue": {
+            "value": 14.238025,
+            "unit": "cycle"
+          },
+          "long_scoreboard_fraction_percent": 37.39658414702882
+        }
+      ]
+    },
+    "fla_8k_random_memory": {
+      "raw_file": "fla_8k_random_memory_raw.csv",
+      "launches": [
+        {
+          "kernel_duration": {
+            "value": 6511488.0,
+            "unit": "ns"
+          },
+          "sm_frequency": {
+            "value": 2506938791.43,
+            "unit": "hz"
+          },
+          "l2_peak_percent": {
+            "value": 54.44,
+            "unit": "%"
+          },
+          "dram_peak_percent": {
+            "value": 4.54,
+            "unit": "%"
+          },
+          "sm_peak_percent": {
+            "value": 25.79,
+            "unit": "%"
+          },
+          "tensor_active_percent": {
+            "value": 18.88,
+            "unit": "%"
+          },
+          "l1_hit_percent": {
+            "value": 0.34,
+            "unit": "%"
+          },
+          "l2_hit_percent": {
+            "value": 98.23,
+            "unit": "%"
+          },
+          "occupancy_percent": {
+            "value": 16.58,
+            "unit": "%"
+          },
+          "registers_per_thread": {
+            "value": 152.0,
+            "unit": "register/thread"
+          },
+          "shared_memory_dynamic": {
+            "value": 36864.0,
+            "unit": "byte/block"
+          },
+          "shared_memory_driver": {
+            "value": 1024.0,
+            "unit": "byte/block"
+          },
+          "long_scoreboard_cycles_per_issue": {
+            "value": 4.92,
+            "unit": "inst"
+          },
+          "all_cycles_per_issue": {
+            "value": 13.46,
+            "unit": "cycle"
+          },
+          "l2_read_sectors": {
+            "value": 509912904.0,
+            "unit": "sector"
+          },
+          "long_scoreboard_fraction_percent": 36.55274888558692
+        }
+      ]
+    },
+    "fla_8k_random_controlled": {
+      "raw_file": "fla_8k_random_controlled_raw.csv",
+      "launches": [
+        {
+          "kernel_duration": {
+            "value": 14880544.0,
+            "unit": "ns"
+          },
+          "sm_frequency": {
+            "value": 1088176067.83,
+            "unit": "hz"
+          },
+          "l2_peak_percent": {
+            "value": 54.96,
+            "unit": "%"
+          },
+          "dram_peak_percent": {
+            "value": 3.56,
+            "unit": "%"
+          },
+          "sm_peak_percent": {
+            "value": 25.99,
+            "unit": "%"
+          },
+          "tensor_active_percent": {
+            "value": 19.03,
+            "unit": "%"
+          },
+          "l1_hit_percent": {
+            "value": 0.35,
+            "unit": "%"
+          },
+          "l2_hit_percent": {
+            "value": 98.23,
+            "unit": "%"
+          },
+          "occupancy_percent": {
+            "value": 16.58,
+            "unit": "%"
+          },
+          "registers_per_thread": {
+            "value": 152.0,
+            "unit": "register/thread"
+          },
+          "shared_memory_dynamic": {
+            "value": 36864.0,
+            "unit": "byte/block"
+          },
+          "shared_memory_driver": {
+            "value": 1024.0,
+            "unit": "byte/block"
+          },
+          "long_scoreboard_cycles_per_issue": {
+            "value": 4.8,
+            "unit": "inst"
+          },
+          "all_cycles_per_issue": {
+            "value": 13.36,
+            "unit": "cycle"
+          },
+          "long_scoreboard_fraction_percent": 35.92814371257485
+        },
+        {
+          "kernel_duration": {
+            "value": 14886848.0,
+            "unit": "ns"
+          },
+          "sm_frequency": {
+            "value": 1088339874.61,
+            "unit": "hz"
+          },
+          "l2_peak_percent": {
+            "value": 54.94,
+            "unit": "%"
+          },
+          "dram_peak_percent": {
+            "value": 3.53,
+            "unit": "%"
+          },
+          "sm_peak_percent": {
+            "value": 25.99,
+            "unit": "%"
+          },
+          "tensor_active_percent": {
+            "value": 19.03,
+            "unit": "%"
+          },
+          "l1_hit_percent": {
+            "value": 0.35,
+            "unit": "%"
+          },
+          "l2_hit_percent": {
+            "value": 98.22,
+            "unit": "%"
+          },
+          "occupancy_percent": {
+            "value": 16.58,
+            "unit": "%"
+          },
+          "registers_per_thread": {
+            "value": 152.0,
+            "unit": "register/thread"
+          },
+          "shared_memory_dynamic": {
+            "value": 36864.0,
+            "unit": "byte/block"
+          },
+          "shared_memory_driver": {
+            "value": 1024.0,
+            "unit": "byte/block"
+          },
+          "long_scoreboard_cycles_per_issue": {
+            "value": 4.81,
+            "unit": "inst"
+          },
+          "all_cycles_per_issue": {
+            "value": 13.36,
+            "unit": "cycle"
+          },
+          "long_scoreboard_fraction_percent": 36.00299401197604
+        },
+        {
+          "kernel_duration": {
+            "value": 14882880.0,
+            "unit": "ns"
+          },
+          "sm_frequency": {
+            "value": 1088633632.35,
+            "unit": "hz"
+          },
+          "l2_peak_percent": {
+            "value": 54.95,
+            "unit": "%"
+          },
+          "dram_peak_percent": {
+            "value": 3.55,
+            "unit": "%"
+          },
+          "sm_peak_percent": {
+            "value": 25.99,
+            "unit": "%"
+          },
+          "tensor_active_percent": {
+            "value": 19.03,
+            "unit": "%"
+          },
+          "l1_hit_percent": {
+            "value": 0.35,
+            "unit": "%"
+          },
+          "l2_hit_percent": {
+            "value": 98.24,
+            "unit": "%"
+          },
+          "occupancy_percent": {
+            "value": 16.58,
+            "unit": "%"
+          },
+          "registers_per_thread": {
+            "value": 152.0,
+            "unit": "register/thread"
+          },
+          "shared_memory_dynamic": {
+            "value": 36864.0,
+            "unit": "byte/block"
+          },
+          "shared_memory_driver": {
+            "value": 1024.0,
+            "unit": "byte/block"
+          },
+          "long_scoreboard_cycles_per_issue": {
+            "value": 4.8,
+            "unit": "inst"
+          },
+          "all_cycles_per_issue": {
+            "value": 13.36,
+            "unit": "cycle"
+          },
+          "long_scoreboard_fraction_percent": 35.92814371257485
+        }
+      ]
+    }
+  },
+  "timeline": {
+    "kernel_count": 20,
+    "total_kernel_ms": 147.26853599999998,
+    "mean_kernel_ms": 7.363426799999999,
+    "cpu_region_ms": 150.995073,
+    "kernel_fraction_of_region_percent": 97.532014173734,
+    "gaps_between_kernels_ms": 0.05207239843750722
+  },
+  "unprofiled_timing": {
+    "median_wall_ms": 8.058308200000397,
+    "min_wall_ms": 7.471569500000896,
+    "max_wall_ms": 8.678221599998892,
+    "batches": 15,
+    "calls_per_batch": 20
+  },
+  "compiled_candidates": [
+    {
+      "warps": 1,
+      "shared_bytes": 36864,
+      "registers_per_thread": 255,
+      "spilled_registers": 128
+    },
+    {
+      "warps": 2,
+      "shared_bytes": 36864,
+      "registers_per_thread": 250,
+      "spilled_registers": 0
+    },
+    {
+      "warps": 4,
+      "shared_bytes": 36864,
+      "registers_per_thread": 152,
+      "spilled_registers": 0
+    }
+  ],
+  "top_long_scoreboard_consumers": [
+    {
+      "address": "0xb01107bf0",
+      "instruction": "STS.128 [R2+0x2800], R52",
+      "samples": 82746
+    },
+    {
+      "address": "0xb01107520",
+      "instruction": "IMAD.SHL.U32 R129, R40, 0x40, RZ",
+      "samples": 65546
+    },
+    {
+      "address": "0xb01107bc0",
+      "instruction": "STS.128 [R2+0x1800], R44",
+      "samples": 49705
+    },
+    {
+      "address": "0xb01107bd0",
+      "instruction": "STS.128 [R2], R56",
+      "samples": 10397
+    },
+    {
+      "address": "0xb01106f10",
+      "instruction": "PRMT R0, R9, 0x7632, R0",
+      "samples": 9598
+    },
+    {
+      "address": "0xb01107be0",
+      "instruction": "STS.128 [R2+0x1000], R40",
+      "samples": 8191
+    },
+    {
+      "address": "0xb01107910",
+      "instruction": "CS2R R70, SRZ",
+      "samples": 3064
+    },
+    {
+      "address": "0xb01107790",
+      "instruction": "CS2R R52, SRZ",
+      "samples": 2394
+    }
+  ]
+}

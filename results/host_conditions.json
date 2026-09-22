@@ -1,0 +1,13 @@
+{
+  "timestamp_utc": "2026-09-21T23:46:57.6241134Z",
+  "active_power_scheme": "Power Scheme GUID: 381b4222-f694-41f0-9685-ff5bb260df2e  (Balanced)",
+  "battery": [
+    {
+      "PowerOnline": true,
+      "Charging": false,
+      "Discharging": false
+    }
+  ],
+  "gpu": "name, driver_version, power.draw [W], power.limit [W], temperature.gpu, clocks.current.sm [MHz], clocks.current.memory [MHz], utilization.gpu [%], pstate, memory.used [MiB]\r\nNVIDIA GeForce RTX 5090 Laptop GPU, 596.36, 12.28 W, [N/A], 51, 1620 MHz, 14001 MHz, 0 %, P0, 310 MiB",
+  "power_settings_changed_by_agent": false
+}

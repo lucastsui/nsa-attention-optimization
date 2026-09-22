@@ -1,0 +1,2 @@
+Compiled probe kernel: parallel_nsa_fwd_kernel_probe
+Probe launched; the sanitizer log and exit code determine the outcome.

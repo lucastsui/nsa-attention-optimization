@@ -1,0 +1,3 @@
+Compiled probe kernel: parallel_nsa_fwd_kernel_probe
+Faulting control reported a CUDA execution error, as expected.
+Probe launched; the sanitizer log and exit code determine the outcome.

@@ -1,0 +1,806 @@
+------------------ ----------------------------------------------------------------- ------
+Kernel Name        parallel_nsa_fwd_kernel                                                 
+------------------ ----------------------------------------------------------------- ------
+Address            Source                                                            stall_
+                                                                                     long_s
+                                                                                     b     
+0xb01106800              LDC R1, c[0x0][0x37c]                                       0     
+0xb01106810              S2R R2, SR_CTAID.Z                                          0     
+0xb01106820              S2UR UR10, SR_CTAID.X                                       0     
+0xb01106830              LDCU UR6, c[0x0][0x3bc]                                     0     
+0xb01106840              S2R R112, SR_TID.X                                          0     
+0xb01106850              LDCU.64 UR8, c[0x0][0x358]                                  0     
+0xb01106860              LDC.64 R4, c[0x0][0x380]                                    0     
+0xb01106870              LDCU UR7, c[0x0][0x3a8]                                     0     
+0xb01106880              S2UR UR5, SR_CgaCtaId                                       0     
+0xb01106890              LDC.64 R136, c[0x0][0x390]                                  0     
+0xb011068a0              SHF.R.U32.HI R0, RZ, 0x2, R2                                0     
+0xb011068b0              LDC.64 R138, c[0x0][0x388]                                  0     
+0xb011068c0              SHF.R.U32.HI R124, RZ, 0x4, R112                            0     
+0xb011068d0              IMAD R13, R0, UR6, RZ                                       0     
+0xb011068e0              LOP3.LUT R0, R2, 0x3, RZ, 0xc0, !PT                         0     
+0xb011068f0              IMAD.SHL.U32 R12, R112, 0x8, RZ                             0     
+0xb01106900              SGXT.U32 R124, R124, 0x3                                    0     
+0xb01106910              LDC.64 R134, c[0x0][0x3b0]                                  0     
+0xb01106920              IADD3 R126, R13, UR10, RZ                                   0     
+0xb01106930              IMAD.SHL.U32 R127, R0, 0x10, RZ                             0     
+0xb01106940              LOP3.LUT R17, R12, 0x78, RZ, 0xc0, !PT                      0     
+0xb01106950              IMAD.SHL.U32 R125, R126, 0x2000, RZ                         0     
+0xb01106960              LOP3.LUT R16, R127, R124, RZ, 0xfc, !PT                     0     
+0xb01106970              LOP3.LUT R3, R127, 0x8, R124, 0xfe, !PT                     0     
+0xb01106980              IMAD.WIDE R4, R125, 0x2, R4                                 0     
+0xb01106990              LEA R8, P0, R16, R4, 0x8                                    0     
+0xb011069a0              LEA.HI.X R9, R16, R5, RZ, 0x8, P0                           0     
+0xb011069b0              LEA R4, P0, R3, R4, 0x8                                     0     
+0xb011069c0              IMAD.WIDE.U32 R8, R17, 0x2, R8                              0     
+0xb011069d0              LEA.HI.X R5, R3, R5, RZ, 0x8, P0                            0     
+0xb011069e0              LDG.E.128 R8, desc[UR8][R8.64]                              0     
+0xb011069f0              IMAD.WIDE.U32 R4, R17, 0x2, R4                              0     
+0xb01106a00              LDG.E.128 R4, desc[UR8][R4.64]                              0     
+0xb01106a10              LOP3.LUT R122, R112, 0x3, RZ, 0xc0, !PT                     0     
+0xb01106a20              IMAD R24, R13, 0x4, R0                                      0     
+0xb01106a30              SHF.R.U32.HI R2, RZ, 0x1, R112                              0     
+0xb01106a40              IMAD.SHL.U32 R20, R112, 0x80, RZ                            0     
+0xb01106a50              SHF.R.S32.HI R14, RZ, 0x2, R112                             0     
+0xb01106a60              IMAD R23, R122, 0x88, RZ                                    0     
+0xb01106a70              LOP3.LUT R13, R2, 0x38, RZ, 0xc0, !PT                       0     
+0xb01106a80              IMAD R25, R122, 0x48, RZ                                    0     
+0xb01106a90              SGXT R2, R14, 0x1                                           0     
+0xb01106aa0              UMOV UR4, 0x400                                             0     
+0xb01106ab0              SHF.R.U32.HI R15, RZ, 0x2, R112                             0     
+0xb01106ac0              ULEA UR4, UR5, UR4, 0x18                                    0     
+0xb01106ad0              LOP3.LUT R23, R23, 0x220, R2, 0x78, !PT                     0     
+0xb01106ae0              IMAD.SHL.U32 R126, R126, 0x40, RZ                           0     
+0xb01106af0              LOP3.LUT R25, R25, 0x120, R2, 0x78, !PT                     0     
+0xb01106b00              UIADD3 UR5, UR4, 0x4000, URZ                                0     
+0xb01106b10              LOP3.LUT R0, R112, 0x10, RZ, 0xc0, !PT                      0     
+0xb01106b20              MOV.64 R132, RZ                                             0     
+0xb01106b30              ISETP.GE.U32.AND P2, PT, R112, 0x40, PT                     0     
+0xb01106b40              LOP3.LUT R19, R15, 0x8, RZ, 0xc0, !PT                       0     
+0xb01106b50              CS2R R36, SRZ                                               0     
+0xb01106b60              LOP3.LUT R2, R112, 0x8, RZ, 0xc0, !PT                       0     
+0xb01106b70              CS2R R38, SRZ                                               0     
+0xb01106b80              LOP3.LUT R21, R13, 0x78, R12, 0x78, !PT                     0     
+0xb01106b90              IMAD R19, R0, 0x2, R19                                      0     
+0xb01106ba0              SHF.R.U32.HI R0, RZ, 0x1, R0                                0     
+0xb01106bb0              IMAD R25, R2, 0x40, R25                                     0     
+0xb01106bc0              LOP3.LUT R14, R15, 0x10, RZ, 0xc0, !PT                      0     
+0xb01106bd0              IMAD R13, R2, 0x80, R23                                     0     
+0xb01106be0              LOP3.LUT R20, R23, 0xc00, R20, 0xf8, !PT                    0     
+0xb01106bf0              IMAD.SHL.U32 R12, R112, 0x2, RZ                             0     
+0xb01106c00              LOP3.LUT R110, R25, R0, RZ, 0x3c, !PT                       0     
+0xb01106c10              CS2R R32, SRZ                                               0     
+0xb01106c20              LOP3.LUT R22, R13, R0, RZ, 0x3c, !PT                        0     
+0xb01106c30              CS2R R34, SRZ                                               0     
+0xb01106c40              LOP3.LUT R109, R25, 0x10, R0, 0x96, !PT                     0     
+0xb01106c50              CS2R R28, SRZ                                               0     
+0xb01106c60              LOP3.LUT R40, R25, 0x20, R0, 0x96, !PT                      0     
+0xb01106c70              CS2R R30, SRZ                                               0     
+0xb01106c80              LOP3.LUT R41, R25, 0x30, R0, 0x96, !PT                      0     
+0xb01106c90              CS2R R26, SRZ                                               0     
+0xb01106ca0              LOP3.LUT R12, R12, 0x6, RZ, 0xc0, !PT                       0     
+0xb01106cb0              IADD3 R18, R14, R19, RZ                                     0     
+0xb01106cc0              IMAD.SHL.U32 R19, R112, 0x20, RZ                            0     
+0xb01106cd0              LOP3.LUT R12, R12, 0x8, R15, 0xf8, !PT                      0     
+0xb01106ce0              LOP3.LUT R14, R23, 0x18, R112, 0x78, !PT                    0     
+0xb01106cf0              LOP3.LUT R123, R12, 0x10, R15, 0xf8, !PT                    0     
+0xb01106d00              LOP3.LUT R42, R20, 0x18, R15, 0x78, !PT                     0     
+0xb01106d10              LOP3.LUT R23, R14, 0xc00, R19, 0xf8, !PT                    0     
+0xb01106d20              LOP3.LUT R111, R18, R25, RZ, 0x3c, !PT                      0     
+0xb01106d30              LOP3.LUT R114, R112, 0x1c, RZ, 0xc0, !PT                    0     
+0xb01106d40              LOP3.LUT R120, R23, 0x20, RZ, 0x3c, !PT                     0     
+0xb01106d50              LEA R114, R114, UR4, 0x2                                    0     
+0xb01106d60              LOP3.LUT R119, R23, 0x40, RZ, 0x3c, !PT                     0     
+0xb01106d70              LOP3.LUT R118, R23, 0x60, RZ, 0x3c, !PT                     0     
+0xb01106d80              LOP3.LUT R117, R23, 0x1020, RZ, 0x3c, !PT                   0     
+0xb01106d90              LOP3.LUT R116, R23, 0x1040, RZ, 0x3c, !PT                   0     
+0xb01106da0              LEA R121, R23, UR4, 0x1                                     0     
+0xb01106db0              LOP3.LUT R115, R23, 0x1060, RZ, 0x3c, !PT                   0     
+0xb01106dc0              LOP3.LUT R23, R42, 0x40, RZ, 0x3c, !PT                      0     
+0xb01106dd0              LOP3.LUT R104, R42, 0x1040, RZ, 0x3c, !PT                   0     
+0xb01106de0              LOP3.LUT R105, R42, 0x60, RZ, 0x3c, !PT                     0     
+0xb01106df0              LOP3.LUT R106, R42, 0x1060, RZ, 0x3c, !PT                   0     
+0xb01106e00              LOP3.LUT P1, RZ, R112, 0x3c3, RZ, 0xc0, !PT                 0     
+0xb01106e10              MOV R130, 0xff800000                                        0     
+0xb01106e20              MOV R108, RZ                                                0     
+0xb01106e30              MOV R128, 0xff800000                                        0     
+0xb01106e40              LEA R111, R111, UR4, 0x1                                    0     
+0xb01106e50              LEA R110, R110, UR4, 0x1                                    0     
+0xb01106e60              LEA R109, R109, UR4, 0x1                                    0     
+0xb01106e70              LEA R120, R120, UR4, 0x1                                    0     
+0xb01106e80              LEA R119, R119, UR4, 0x1                                    0     
+0xb01106e90              LEA R118, R118, UR4, 0x1                                    0     
+0xb01106ea0              LEA R117, R117, UR4, 0x1                                    0     
+0xb01106eb0              LEA R116, R116, UR4, 0x1                                    0     
+0xb01106ec0              LEA R115, R115, UR4, 0x1                                    0     
+0xb01106ed0              LEA R23, R23, UR4, 0x1                                      0     
+0xb01106ee0              LEA R104, R104, UR4, 0x1                                    0     
+0xb01106ef0              LEA R105, R105, UR4, 0x1                                    0     
+0xb01106f00              LEA R106, R106, UR4, 0x1                                    0     
+0xb01106f10              PRMT R0, R9, 0x7632, R0                                     9598  
+0xb01106f20              IMAD.U32 R9, R9, 0x10000, RZ                                0     
+0xb01106f30              PRMT R13, R8, 0x7632, R13                                   0     
+0xb01106f40              IMAD.U32 R8, R8, 0x10000, RZ                                0     
+0xb01106f50              PRMT R12, R10, 0x7632, R12                                  0     
+0xb01106f60              IMAD.U32 R0, R0, 0x10000, RZ                                0     
+0xb01106f70              FMUL R9, R9, UR7                                            0     
+0xb01106f80              PRMT R2, R11, 0x7632, R2                                    0     
+0xb01106f90              IMAD.U32 R13, R13, 0x10000, RZ                              0     
+0xb01106fa0              FMUL R0, R0, UR7                                            0     
+0xb01106fb0              IMAD.U32 R10, R10, 0x10000, RZ                              0     
+0xb01106fc0              PRMT R15, R5, 0x7632, R15                                   761   
+0xb01106fd0              IMAD.U32 R12, R12, 0x10000, RZ                              0     
+0xb01106fe0              PRMT R14, R6, 0x7632, R14                                   0     
+0xb01106ff0              IMAD.U32 R18, R5, 0x10000, RZ                               0     
+0xb01107000              F2FP.BF16.F32.PACK_AB R9, R0, R9                            0     
+0xb01107010              FMUL R8, R8, UR7                                            0     
+0xb01107020              S2R R0, SR_CTAID.Y                                          0     
+0xb01107030              FMUL R13, R13, UR7                                          0     
+0xb01107040              IMAD.U32 R11, R11, 0x10000, RZ                              0     
+0xb01107050              PRMT R19, R4, 0x7632, R19                                   0     
+0xb01107060              IMAD.U32 R20, R4, 0x10000, RZ                               0     
+0xb01107070              FMUL R10, R10, UR7                                          0     
+0xb01107080              IMAD.U32 R2, R2, 0x10000, RZ                                0     
+0xb01107090              FMUL R5, R12, UR7                                           0     
+0xb011070a0              PRMT R4, R7, 0x7632, R4                                     0     
+0xb011070b0              IMAD.U32 R15, R15, 0x10000, RZ                              0     
+0xb011070c0              F2FP.BF16.F32.PACK_AB R8, R13, R8                           0     
+0xb011070d0              IMAD.U32 R7, R7, 0x10000, RZ                                0     
+0xb011070e0              FMUL R11, R11, UR7                                          0     
+0xb011070f0              IMAD.U32 R6, R6, 0x10000, RZ                                0     
+0xb01107100              FMUL R2, R2, UR7                                            0     
+0xb01107110              IMAD.U32 R14, R14, 0x10000, RZ                              0     
+0xb01107120              FMUL R13, R18, UR7                                          0     
+0xb01107130              F2FP.BF16.F32.PACK_AB R10, R5, R10                          0     
+0xb01107140              IMAD.U32 R19, R19, 0x10000, RZ                              0     
+0xb01107150              FMUL R18, R15, UR7                                          0     
+0xb01107160              IMAD.U32 R4, R4, 0x10000, RZ                                0     
+0xb01107170              FMUL R15, R7, UR7                                           0     
+0xb01107180              IMAD.SHL.U32 R5, R24, 0x80, RZ                              0     
+0xb01107190              FMUL R6, R6, UR7                                            0     
+0xb011071a0              FMUL R7, R14, UR7                                           0     
+0xb011071b0              F2FP.BF16.F32.PACK_AB R11, R2, R11                          0     
+0xb011071c0              FMUL R20, R20, UR7                                          0     
+0xb011071d0              FMUL R19, R19, UR7                                          0     
+0xb011071e0              FMUL R4, R4, UR7                                            0     
+0xb011071f0              IMAD R2, R124, 0x80, R21                                    0     
+0xb01107200              F2FP.BF16.F32.PACK_AB R14, R7, R6                           0     
+0xb01107210              IMAD.WIDE R136, R5, 0x2, R136                               0     
+0xb01107220              IADD3 R7, R126, R127, RZ                                    0     
+0xb01107230              F2FP.BF16.F32.PACK_AB R12, R19, R20                         0     
+0xb01107240              CS2R R24, SRZ                                               0     
+0xb01107250              IMAD.WIDE R138, R5, 0x2, R138                               0     
+0xb01107260              F2FP.BF16.F32.PACK_AB R13, R18, R13                         0     
+0xb01107270              USHF.R.S32.HI UR7, URZ, 0x1f, UR6                           0     
+0xb01107280              F2FP.BF16.F32.PACK_AB R15, R4, R15                          0     
+0xb01107290              IMAD R5, R0, 0x80, R17                                      0     
+0xb011072a0              LEA R2, R2, UR4, 0x1                                        0     
+0xb011072b0              IMAD.WIDE R134, R7, 0x4, R134                               0     
+0xb011072c0              SHF.L.U64.HI R6, R16, 0x7, RZ                               0     
+0xb011072d0              LOP3.LUT R18, R22, 0x50, RZ, 0x3c, !PT                      0     
+0xb011072e0              IMAD.WIDE.U32 R136, R5, 0x2, R136                           0     
+0xb011072f0              SHF.R.U32.HI R5, RZ, 0x3, R112                              0     
+0xb01107300              STS.128 [R2+0x8800], R12                                    0     
+0xb01107310              LOP3.LUT R19, R22, 0x60, RZ, 0x3c, !PT                      0     
+0xb01107320              IMAD.WIDE.U32 R138, R17, 0x2, R138                          0     
+0xb01107330              LOP3.LUT R113, R5, 0xc, RZ, 0xc0, !PT                       0     
+0xb01107340              STS.128 [R2+0x8000], R8                                     0     
+0xb01107350              LOP3.LUT R17, R22, 0x40, RZ, 0x3c, !PT                      0     
+0xb01107360              IMAD.SHL.U32 R7, R16, 0x80, RZ                              0     
+0xb01107370              LOP3.LUT R16, R22, 0x30, RZ, 0x3c, !PT                      0     
+0xb01107380              LOP3.LUT R20, R22, 0x70, RZ, 0x3c, !PT                      0     
+0xb01107390              LOP3.LUT R21, R42, 0x20, RZ, 0x3c, !PT                      0     
+0xb011073a0              LEA.HI R5, R112, 0x38, RZ, 0x1c                             0     
+0xb011073b0              MOV R4, RZ                                                  0     
+0xb011073c0              LOP3.LUT R14, R22, 0x10, RZ, 0x3c, !PT                      0     
+0xb011073d0              LOP3.LUT R15, R22, 0x20, RZ, 0x3c, !PT                      0     
+0xb011073e0              LEA R12, R22, UR4, 0x1                                      0     
+0xb011073f0              IMAD.SHL.U32 R9, R3, 0x80, RZ                               0     
+0xb01107400              LOP3.LUT R22, R42, 0x1020, RZ, 0x3c, !PT                    0     
+0xb01107410              LEA R112, R112, UR4, 0x2                                    0     
+0xb01107420              IADD3 R113, R114, R113, RZ                                  0     
+0xb01107430              SHF.L.U64.HI R8, R3, 0x7, RZ                                0     
+0xb01107440              LEA R10, R40, UR4, 0x1                                      0     
+0xb01107450              LEA R11, R41, UR4, 0x1                                      0     
+0xb01107460              LEA R13, R42, UR5, 0x1                                      0     
+0xb01107470              LEA R14, R14, UR4, 0x1                                      0     
+0xb01107480              LEA R15, R15, UR4, 0x1                                      0     
+0xb01107490              LEA R16, R16, UR4, 0x1                                      0     
+0xb011074a0              LEA R17, R17, UR4, 0x1                                      0     
+0xb011074b0              LEA R18, R18, UR4, 0x1                                      0     
+0xb011074c0              LEA R19, R19, UR4, 0x1                                      0     
+0xb011074d0              LEA R20, R20, UR4, 0x1                                      0     
+0xb011074e0              LEA R21, R21, UR4, 0x1                                      0     
+0xb011074f0              LEA R22, R22, UR4, 0x1                                      0     
+0xb01107500              IADD.64 R40, R134, R132                                     0     
+0xb01107510              LDG.E R40, desc[UR8][R40.64]                                0     
+0xb01107520              IMAD.SHL.U32 R129, R40, 0x40, RZ                            65546 
+0xb01107530              ISETP.GT.U32.AND P0, PT, R129, UR10, PT                     0     
+0xb01107540        @P0   BRA 0xb01108bf0                                             0     
+0xb01107550              LOP3.LUT R146, R124, 0x18, R129, 0xfe, !PT                  0     
+0xb01107560              CS2R R44, SRZ                                               0     
+0xb01107570              MOV R147, RZ                                                0     
+0xb01107580              CS2R R46, SRZ                                               0     
+0xb01107590              LOP3.LUT R60, R129, R124, RZ, 0xfc, !PT                     0     
+0xb011075a0              IMAD.WIDE.U32 R52, R146, 0x400, R138                        0     
+0xb011075b0              LOP3.LUT R148, R124, 0x10, R129, 0xfe, !PT                  0     
+0xb011075c0              ISETP.GE.S64.AND P3, PT, R146, UR6, PT                      0     
+0xb011075d0              MOV R61, RZ                                                 0     
+0xb011075e0              SHF.L.U64.HI R85, R60, 0xa, RZ                              0     
+0xb011075f0              IMAD.SHL.U32 R84, R60, 0x400, RZ                            0     
+0xb01107600              CS2R R56, SRZ                                               0     
+0xb01107610              CS2R R58, SRZ                                               0     
+0xb01107620              MOV R149, RZ                                                0     
+0xb01107630              LOP3.LUT R142, R124, 0x28, R129, 0xfe, !PT                  0     
+0xb01107640              CS2R R40, SRZ                                               0     
+0xb01107650              MOV R143, RZ                                                0     
+0xb01107660              LOP3.LUT R68, R129, 0x8, R124, 0xfe, !PT                    0     
+0xb01107670              CS2R R42, SRZ                                               0     
+0xb01107680              MOV R69, RZ                                                 0     
+0xb01107690        @!P3  LDG.E.128 R44, desc[UR8][R52.64]                            0     
+0xb011076a0              ISETP.GE.S64.AND P3, PT, R60, UR6, PT                       0     
+0xb011076b0              IADD.64 R62, R138, R84                                      0     
+0xb011076c0              ISETP.GE.S64.AND P0, PT, R148, UR6, PT                      0     
+0xb011076d0              ISETP.GE.S64.AND P6, PT, R142, UR6, PT                      0     
+0xb011076e0              MOV R145, RZ                                                0     
+0xb011076f0              LOP3.LUT R144, R124, 0x20, R129, 0xfe, !PT                  0     
+0xb01107700              IMAD.SHL.U32 R90, R68, 0x400, RZ                            0     
+0xb01107710              CS2R R54, SRZ                                               0     
+0xb01107720              CS2R R64, SRZ                                               0     
+0xb01107730              CS2R R66, SRZ                                               0     
+0xb01107740        @!P3  LDG.E.128 R56, desc[UR8][R62.64]                            0     
+0xb01107750              ISETP.GE.S64.AND P3, PT, R68, UR6, PT                       0     
+0xb01107760              IMAD.WIDE.U32 R50, R148, 0x400, R138                        0     
+0xb01107770              SHF.L.U64.HI R91, R68, 0xa, RZ                              0     
+0xb01107780              ISETP.GE.S64.AND P4, PT, R144, UR6, PT                      0     
+0xb01107790              CS2R R52, SRZ                                               2394  
+0xb011077a0              IMAD.WIDE.U32 R72, R142, 0x400, R138                        0     
+0xb011077b0              IADD.64 R76, R138, R90                                      0     
+0xb011077c0              MOV R141, RZ                                                0     
+0xb011077d0              LOP3.LUT R140, R124, 0x30, R129, 0xfe, !PT                  0     
+0xb011077e0        @!P0  LDG.E.128 R40, desc[UR8][R50.64]                            0     
+0xb011077f0              IADD3 R92, R5, R129, RZ                                     0     
+0xb01107800              MOV R93, RZ                                                 0     
+0xb01107810              CS2R R48, SRZ                                               0     
+0xb01107820        @!P6  LDG.E.128 R52, desc[UR8][R72.64]                            0     
+0xb01107830              ISETP.GE.S64.AND P6, PT, R140, UR6, PT                      0     
+0xb01107840              IMAD.WIDE.U32 R70, R144, 0x400, R138                        0     
+0xb01107850        @!P3  LDG.E.128 R64, desc[UR8][R76.64]                            0     
+0xb01107860              ISETP.GE.S64.AND P3, PT, R92, UR6, PT                       0     
+0xb01107870              CS2R R50, SRZ                                               2095  
+0xb01107880              ISETP.NE.AND P0, PT, R0, RZ, PT                             0     
+0xb01107890              CS2R R62, SRZ                                               0     
+0xb011078a0              IMAD.WIDE.U32 R74, R140, 0x400, R138                        0     
+0xb011078b0        @!P4  LDG.E.128 R48, desc[UR8][R70.64]                            0     
+0xb011078c0              ISETP.LT.S64.AND P5, PT, R60, UR6, !P0                      0     
+0xb011078d0              ISETP.LT.S64.AND P4, PT, R68, UR6, !P0                      0     
+0xb011078e0              MOV R60, RZ                                                 0     
+0xb011078f0              MOV R68, RZ                                                 0     
+0xb01107900              IMAD.WIDE.U32 R82, R92, 0x400, R138                         0     
+0xb01107910              CS2R R70, SRZ                                               3064  
+0xb01107920        @!P6  LDG.E.128 R60, desc[UR8][R74.64]                            0     
+0xb01107930        @!P3  LDG.E.128 R68, desc[UR8][R82.64]                            0     
+0xb01107940              BAR.SYNC.DEFER_BLOCKING 0x0                                 0     
+0xb01107950              ISETP.LT.S64.AND P3, PT, R92, UR6, !P0                      0     
+0xb01107960              CS2R R72, SRZ                                               0     
+0xb01107970              CS2R R74, SRZ                                               1526  
+0xb01107980              IADD.64 R84, R136, R84                                      0     
+0xb01107990              CS2R R76, SRZ                                               0     
+0xb011079a0              CS2R R78, SRZ                                               0     
+0xb011079b0              CS2R R80, SRZ                                               0     
+0xb011079c0              IADD.64 R90, R136, R90                                      0     
+0xb011079d0              CS2R R82, SRZ                                               439   
+0xb011079e0              IMAD.WIDE.U32 R92, R92, 0x400, R136                         0     
+0xb011079f0              ISETP.LT.S64.AND P6, PT, R148, UR6, !P0                     0     
+0xb01107a00        @P5   LDG.E.128 R72, desc[UR8][R84.64]                            0     
+0xb01107a10              ISETP.LT.S64.AND P5, PT, R146, UR6, !P0                     0     
+0xb01107a20        @P4   LDG.E.128 R76, desc[UR8][R90.64]                            0     
+0xb01107a30              ISETP.LT.S64.AND P4, PT, R144, UR6, !P0                     0     
+0xb01107a40        @P3   LDG.E.128 R80, desc[UR8][R92.64]                            0     
+0xb01107a50              ISETP.LT.S64.AND P3, PT, R142, UR6, !P0                     0     
+0xb01107a60              ISETP.LT.S64.AND P0, PT, R140, UR6, !P0                     0     
+0xb01107a70              CS2R R84, SRZ                                               1365  
+0xb01107a80              CS2R R86, SRZ                                               0     
+0xb01107a90              CS2R R88, SRZ                                               0     
+0xb01107aa0              CS2R R90, SRZ                                               2228  
+0xb01107ab0              CS2R R94, SRZ                                               0     
+0xb01107ac0              MOV R92, RZ                                                 0     
+0xb01107ad0              MOV R93, RZ                                                 0     
+0xb01107ae0              CS2R R96, SRZ                                               0     
+0xb01107af0              CS2R R98, SRZ                                               0     
+0xb01107b00              CS2R R100, SRZ                                              0     
+0xb01107b10              CS2R R102, SRZ                                              0     
+0xb01107b20              IMAD.WIDE.U32 R148, R148, 0x400, R136                       0     
+0xb01107b30              IMAD.WIDE.U32 R146, R146, 0x400, R136                       0     
+0xb01107b40        @P6   LDG.E.128 R84, desc[UR8][R148.64]                           0     
+0xb01107b50              IMAD.WIDE.U32 R144, R144, 0x400, R136                       0     
+0xb01107b60        @P5   LDG.E.128 R88, desc[UR8][R146.64]                           0     
+0xb01107b70              IMAD.WIDE.U32 R142, R142, 0x400, R136                       0     
+0xb01107b80        @P4   LDG.E.128 R92, desc[UR8][R144.64]                           0     
+0xb01107b90              IMAD.WIDE.U32 R140, R140, 0x400, R136                       0     
+0xb01107ba0        @P3   LDG.E.128 R96, desc[UR8][R142.64]                           0     
+0xb01107bb0        @P0   LDG.E.128 R100, desc[UR8][R140.64]                          0     
+0xb01107bc0              STS.128 [R2+0x1800], R44                                    49705 
+0xb01107bd0              STS.128 [R2], R56                                           10397 
+0xb01107be0              STS.128 [R2+0x1000], R40                                    8191  
+0xb01107bf0              STS.128 [R2+0x2800], R52                                    82746 
+0xb01107c00              STS.128 [R2+0x800], R64                                     0     
+0xb01107c10              STS.128 [R2+0x2000], R48                                    0     
+0xb01107c20              STS.128 [R2+0x3000], R60                                    0     
+0xb01107c30              STS.128 [R2+0x3800], R68                                    0     
+0xb01107c40              STS.128 [R2+0x4000], R72                                    0     
+0xb01107c50              STS.128 [R2+0x4800], R76                                    0     
+0xb01107c60              STS.128 [R2+0x7800], R80                                    0     
+0xb01107c70              STS.128 [R2+0x5000], R84                                    0     
+0xb01107c80              STS.128 [R2+0x5800], R88                                    0     
+0xb01107c90              STS.128 [R2+0x6000], R92                                    0     
+0xb01107ca0              STS.128 [R2+0x6800], R96                                    0     
+0xb01107cb0              STS.128 [R2+0x7000], R100                                   0     
+0xb01107cc0              BAR.SYNC.DEFER_BLOCKING 0x0                                 0     
+0xb01107cd0              LDSM.16.M88.4 R44, [R12+0x8000]                             0     
+0xb01107ce0              LDSM.16.M88.4 R64, [R121]                                   0     
+0xb01107cf0              LDSM.16.M88.4 R48, [R121+0x2000]                            0     
+0xb01107d00              LDSM.16.M88.4 R52, [R14+0x8000]                             0     
+0xb01107d10              LDSM.16.M88.4 R56, [R15+0x8000]                             0     
+0xb01107d20              LDSM.16.M88.4 R60, [R120]                                   0     
+0xb01107d30              HMMA.16816.F32.BF16 R40, R44, R64, RZ                       0     
+0xb01107d40              NOP                                                         0     
+0xb01107d50              HMMA.16816.F32.BF16 R44, R44, R48, RZ                       0     
+0xb01107d60              NOP                                                         0     
+0xb01107d70              HMMA.16816.F32.BF16 R64, R52, R66, R40                      0     
+0xb01107d80              LDSM.16.M88.4 R40, [R117]                                   0     
+0xb01107d90              HMMA.16816.F32.BF16 R44, R52, R50, R44                      0     
+0xb01107da0              LDSM.16.M88.4 R52, [R16+0x8000]                             0     
+0xb01107db0              LDSM.16.M88.4 R48, [R17+0x8000]                             0     
+0xb01107dc0              HMMA.16816.F32.BF16 R64, R56, R60, R64                      0     
+0xb01107dd0              NOP                                                         0     
+0xb01107de0              HMMA.16816.F32.BF16 R56, R56, R40, R44                      0     
+0xb01107df0              LDSM.16.M88.4 R44, [R119]                                   0     
+0xb01107e00              HMMA.16816.F32.BF16 R64, R52, R62, R64                      0     
+0xb01107e10              LDSM.16.M88.4 R60, [R116]                                   0     
+0xb01107e20              HMMA.16816.F32.BF16 R56, R52, R42, R56                      0     
+0xb01107e30              LDSM.16.M88.4 R40, [R18+0x8000]                             0     
+0xb01107e40              LDSM.16.M88.4 R52, [R19+0x8000]                             0     
+0xb01107e50              HMMA.16816.F32.BF16 R64, R48, R44, R64                      0     
+0xb01107e60              NOP                                                         0     
+0xb01107e70              HMMA.16816.F32.BF16 R48, R48, R60, R56                      0     
+0xb01107e80              LDSM.16.M88.4 R56, [R118]                                   0     
+0xb01107e90              HMMA.16816.F32.BF16 R64, R40, R46, R64                      0     
+0xb01107ea0              LDSM.16.M88.4 R44, [R115]                                   0     
+0xb01107eb0              HMMA.16816.F32.BF16 R48, R40, R62, R48                      0     
+0xb01107ec0              LDSM.16.M88.4 R40, [R20+0x8000]                             0     
+0xb01107ed0              HMMA.16816.F32.BF16 R64, R52, R56, R64                      0     
+0xb01107ee0              NOP                                                         0     
+0xb01107ef0              HMMA.16816.F32.BF16 R48, R52, R44, R48                      0     
+0xb01107f00              NOP                                                         0     
+0xb01107f10              HMMA.16816.F32.BF16 R64, R40, R58, R64                      0     
+0xb01107f20              LOP3.LUT R129, R129, R123, RZ, 0xfc, !PT                    0     
+0xb01107f30              HMMA.16816.F32.BF16 R48, R40, R46, R48                      0     
+0xb01107f40              BAR.SYNC.DEFER_BLOCKING 0x0                                 0     
+0xb01107f50              ISETP.LE.AND P3, PT, R129, UR10, PT                         0     
+0xb01107f60              ISETP.LT.AND P0, PT, R129, UR10, PT                         0     
+0xb01107f70              LOP3.LUT R40, R129, 0x20, RZ, 0xfc, !PT                     0     
+0xb01107f80              LOP3.LUT R129, R129, 0x21, RZ, 0xfc, !PT                    0     
+0xb01107f90              FSEL R64, R64, -INF , P3                                    0     
+0xb01107fa0              ISETP.LE.AND P4, PT, R40, UR10, PT                          0     
+0xb01107fb0              FSEL R66, R66, -INF , P3                                    0     
+0xb01107fc0              FSEL R65, R65, -INF , P0                                    0     
+0xb01107fd0              FSEL R67, R67, -INF , P0                                    0     
+0xb01107fe0              ISETP.LE.AND P0, PT, R129, UR10, PT                         0     
+0xb01107ff0              FMNMX R40, R64, R65, !PT                                    0     
+0xb01108000              FMNMX R41, R66, R67, !PT                                    0     
+0xb01108010              FSEL R48, R48, -INF , P4                                    0     
+0xb01108020              FSEL R50, R50, -INF , P4                                    0     
+0xb01108030              FSEL R49, R49, -INF , P0                                    0     
+0xb01108040              FSEL R52, R51, -INF , P0                                    0     
+0xb01108050              FMNMX R40, R48, R40, !PT                                    0     
+0xb01108060              FMNMX R41, R50, R41, !PT                                    0     
+0xb01108070              FMNMX R40, R49, R40, !PT                                    0     
+0xb01108080              FMNMX R41, R52, R41, !PT                                    0     
+0xb01108090              SHFL.BFLY PT, R43, R40, 0x2, 0x1f                           0     
+0xb011080a0              SHFL.BFLY PT, R42, R41, 0x2, 0x1f                           0     
+0xb011080b0              ISETP.NE.AND P0, PT, R122, RZ, PT                           0     
+0xb011080c0              FMNMX R43, R40, R43, !PT                                    0     
+0xb011080d0              FMNMX R44, R41, R42, !PT                                    0     
+0xb011080e0              SHFL.BFLY PT, R42, R43, 0x1, 0x1f                           0     
+0xb011080f0              SHFL.BFLY PT, R45, R44, 0x1, 0x1f                           0     
+0xb01108100              BSSY.RECONVERGENT B0, 0xb01108170                           0     
+0xb01108110              FMNMX R42, R43, R42, !PT                                    0     
+0xb01108120              FMNMX R46, R44, R45, !PT                                    0     
+0xb01108130        @P0   BRA 0xb01108160                                             0     
+0xb01108140              STS [R113], R42                                             0     
+0xb01108150              STS [R113+0x80], R46                                        0     
+0xb01108160              BSYNC.RECONVERGENT B0                                       0     
+0xb01108170              BAR.SYNC.DEFER_BLOCKING 0x0                                 0     
+0xb01108180              BSSY.RECONVERGENT B0, 0xb01108670                           0     
+0xb01108190        @!P2  LDS R107, [R112]                                            0     
+0xb011081a0              SHFL.BFLY PT, R40, R107, 0x2, 0x1f                          0     
+0xb011081b0              FMNMX R40, R107, R40, !PT                                   0     
+0xb011081c0              SHFL.BFLY PT, R41, R40, 0x1, 0x1f                           0     
+0xb011081d0              FMNMX R41, R40, R41, !PT                                    0     
+0xb011081e0        @!P1  STS [R112], R41                                             0     
+0xb011081f0              BAR.SYNC.DEFER_BLOCKING 0x0                                 0     
+0xb01108200              LDS R69, [R114+0x80]                                        0     
+0xb01108210              LDS R71, [R114]                                             0     
+0xb01108220              FMNMX R69, R128, R69, !PT                                   0     
+0xb01108230              FMNMX R71, R130, R71, !PT                                   0     
+0xb01108240              FADD R40, R66, -R69                                         0     
+0xb01108250              FADD R41, R50, -R69                                         0     
+0xb01108260              FADD R42, R64, -R71                                         0     
+0xb01108270              FMUL R46, R40, 1.4426950216293334961                        0     
+0xb01108280              FADD R40, R67, -R69                                         0     
+0xb01108290              FMUL R41, R41, 1.4426950216293334961                        0     
+0xb011082a0              FMUL R43, R42, 1.4426950216293334961                        0     
+0xb011082b0              FADD R42, R65, -R71                                         0     
+0xb011082c0              FMUL R47, R40, 1.4426950216293334961                        0     
+0xb011082d0              BAR.SYNC.DEFER_BLOCKING 0x0                                 0     
+0xb011082e0              FSETP.GEU.AND P3, PT, R46, -126, PT                         0     
+0xb011082f0              FMUL R44, R42, 1.4426950216293334961                        0     
+0xb01108300              FSETP.GEU.AND P5, PT, R43, -126, PT                         0     
+0xb01108310              FSETP.GEU.AND P4, PT, R47, -126, PT                         0     
+0xb01108320              FADD R40, R48, -R71                                         0     
+0xb01108330              FSETP.GEU.AND P6, PT, R44, -126, PT                         0     
+0xb01108340              FMUL R48, R40, 1.4426950216293334961                        0     
+0xb01108350              FADD R40, R49, -R71                                         0     
+0xb01108360        @!P3  FMUL R46, R46, 0.5                                          0     
+0xb01108370        @!P5  FMUL R43, R43, 0.5                                          0     
+0xb01108380        @!P4  FMUL R47, R47, 0.5                                          0     
+0xb01108390              MUFU.EX2 R42, R43                                           0     
+0xb011083a0        @!P6  FMUL R44, R44, 0.5                                          0     
+0xb011083b0              MUFU.EX2 R46, R46                                           0     
+0xb011083c0              MUFU.EX2 R45, R44                                           0     
+0xb011083d0        @!P5  FMUL R42, R42, R42                                          0     
+0xb011083e0              FSETP.GEU.AND P5, PT, R48, -126, PT                         0     
+0xb011083f0              MUFU.EX2 R47, R47                                           0     
+0xb01108400              FMUL R44, R40, 1.4426950216293334961                        0     
+0xb01108410              FADD R40, R52, -R69                                         0     
+0xb01108420        @!P3  FMUL R46, R46, R46                                          0     
+0xb01108430              FSETP.GEU.AND P3, PT, R41, -126, PT                         0     
+0xb01108440              FMUL R40, R40, 1.4426950216293334961                        0     
+0xb01108450        @!P5  FMUL R48, R48, 0.5                                          0     
+0xb01108460        @!P6  FMUL R45, R45, R45                                          0     
+0xb01108470              FSETP.GEU.AND P6, PT, R44, -126, PT                         0     
+0xb01108480              MUFU.EX2 R43, R48                                           0     
+0xb01108490        @!P3  FMUL R41, R41, 0.5                                          0     
+0xb011084a0        @!P4  FMUL R47, R47, R47                                          0     
+0xb011084b0              FSETP.GEU.AND P4, PT, R40, -126, PT                         0     
+0xb011084c0              MUFU.EX2 R49, R41                                           0     
+0xb011084d0              FADD R48, R42, R45                                          0     
+0xb011084e0              FADD R54, R46, R47                                          0     
+0xb011084f0        @!P6  FMUL R44, R44, 0.5                                          0     
+0xb01108500              MUFU.EX2 R50, R44                                           0     
+0xb01108510        @!P5  FMUL R43, R43, R43                                          0     
+0xb01108520        @!P4  FMUL R40, R40, 0.5                                          0     
+0xb01108530              FADD R51, R43, R48                                          0     
+0xb01108540              MUFU.EX2 R52, R40                                           0     
+0xb01108550        @!P3  FMUL R49, R49, R49                                          0     
+0xb01108560              FADD R53, R49, R54                                          0     
+0xb01108570        @!P6  FMUL R50, R50, R50                                          0     
+0xb01108580              FADD R51, R50, R51                                          0     
+0xb01108590        @!P4  FMUL R52, R52, R52                                          0     
+0xb011085a0              SHFL.BFLY PT, R40, R51, 0x2, 0x1f                           0     
+0xb011085b0              FADD R53, R52, R53                                          0     
+0xb011085c0              SHFL.BFLY PT, R44, R53, 0x2, 0x1f                           0     
+0xb011085d0              FADD R40, R51, R40                                          0     
+0xb011085e0              SHFL.BFLY PT, R41, R40, 0x1, 0x1f                           0     
+0xb011085f0              FADD R44, R53, R44                                          0     
+0xb01108600              SHFL.BFLY PT, R55, R44, 0x1, 0x1f                           0     
+0xb01108610              FADD R48, R40, R41                                          0     
+0xb01108620              FADD R54, R44, R55                                          0     
+0xb01108630        @P0   BRA 0xb01108660                                             0     
+0xb01108640              STS [R113], R48                                             0     
+0xb01108650              STS [R113+0x80], R54                                        0     
+0xb01108660              BSYNC.RECONVERGENT B0                                       0     
+0xb01108670              BAR.SYNC.DEFER_BLOCKING 0x0                                 0     
+0xb01108680        @!P2  LDS R3, [R112]                                              0     
+0xb01108690              SHFL.BFLY PT, R40, R3, 0x2, 0x1f                            0     
+0xb011086a0              FADD R44, R3, R40                                           0     
+0xb011086b0              FADD R40, R130, -R71                                        0     
+0xb011086c0              MOV R130, R71                                               0     
+0xb011086d0              SHFL.BFLY PT, R41, R44, 0x1, 0x1f                           0     
+0xb011086e0              FMUL R56, R40, 1.4426950216293334961                        0     
+0xb011086f0              F2FP.BF16.F32.PACK_AB R40, R45, R42                         0     
+0xb01108700              F2FP.BF16.F32.PACK_AB R42, R50, R43                         0     
+0xb01108710              F2FP.BF16.F32.PACK_AB R43, R52, R49                         0     
+0xb01108720              FSETP.GEU.AND P0, PT, R56, -126, PT                         0     
+0xb01108730        @!P0  FMUL R56, R56, 0.5                                          0     
+0xb01108740              FADD R51, R44, R41                                          0     
+0xb01108750              FADD R41, R128, -R69                                        0     
+0xb01108760              MUFU.EX2 R70, R56                                           0     
+0xb01108770              MOV R128, R69                                               0     
+0xb01108780        @!P1  STS [R112], R51                                             0     
+0xb01108790              FMUL R57, R41, 1.4426950216293334961                        0     
+0xb011087a0              F2FP.BF16.F32.PACK_AB R41, R47, R46                         0     
+0xb011087b0              BAR.SYNC.DEFER_BLOCKING 0x0                                 0     
+0xb011087c0              FSETP.GEU.AND P3, PT, R57, -126, PT                         0     
+0xb011087d0        @!P0  FMUL R70, R70, R70                                          0     
+0xb011087e0        @!P3  FMUL R57, R57, 0.5                                          0     
+0xb011087f0              FMUL R60, R36, R70                                          0     
+0xb01108800              FMUL R61, R37, R70                                          0     
+0xb01108810              FMUL R32, R32, R70                                          0     
+0xb01108820              MUFU.EX2 R68, R57                                           0     
+0xb01108830              FMUL R33, R33, R70                                          0     
+0xb01108840              FMUL R28, R28, R70                                          0     
+0xb01108850              FMUL R29, R29, R70                                          0     
+0xb01108860              FMUL R24, R24, R70                                          0     
+0xb01108870              LDS R75, [R114]                                             0     
+0xb01108880              FMUL R25, R25, R70                                          0     
+0xb01108890              LDS R73, [R114+0x80]                                        0     
+0xb011088a0              BAR.SYNC.DEFER_BLOCKING 0x0                                 0     
+0xb011088b0        @!P3  FMUL R68, R68, R68                                          0     
+0xb011088c0              FMUL R62, R38, R68                                          0     
+0xb011088d0              FMUL R63, R39, R68                                          0     
+0xb011088e0              FMUL R34, R34, R68                                          0     
+0xb011088f0              FMUL R35, R35, R68                                          0     
+0xb01108900              FMUL R30, R30, R68                                          0     
+0xb01108910              FMUL R31, R31, R68                                          0     
+0xb01108920              FMUL R26, R26, R68                                          0     
+0xb01108930              FMUL R27, R27, R68                                          0     
+0xb01108940              STSM.16.M88.4 [R111], R40                                   0     
+0xb01108950              BAR.SYNC.DEFER_BLOCKING 0x0                                 0     
+0xb01108960              FFMA R4, R4, R70, R75                                       0     
+0xb01108970              FFMA R108, R108, R68, R73                                   0     
+0xb01108980              LDSM.16.M88.4 R52, [R110]                                   0     
+0xb01108990              LDSM.16.MT88.4 R48, [R13]                                   0     
+0xb011089a0              LDSM.16.MT88.4 R44, [R21+0x4000]                            0     
+0xb011089b0              LDSM.16.MT88.4 R40, [R23+0x4000]                            0     
+0xb011089c0              LDSM.16.MT88.4 R36, [R105+0x4000]                           0     
+0xb011089d0              LDSM.16.M88.4 R56, [R109]                                   0     
+0xb011089e0              LDSM.16.MT88.4 R64, [R13+0x2000]                            0     
+0xb011089f0              HMMA.16816.F32.BF16 R60, R52, R48, R60                      0     
+0xb01108a00              NOP                                                         0     
+0xb01108a10              HMMA.16816.F32.BF16 R32, R52, R44, R32                      0     
+0xb01108a20              NOP                                                         0     
+0xb01108a30              HMMA.16816.F32.BF16 R28, R52, R40, R28                      0     
+0xb01108a40              NOP                                                         0     
+0xb01108a50              HMMA.16816.F32.BF16 R52, R52, R36, R24                      0     
+0xb01108a60              LDSM.16.MT88.4 R24, [R104+0x4000]                           0     
+0xb01108a70              HMMA.16816.F32.BF16 R60, R56, R50, R60                      0     
+0xb01108a80              LDSM.16.M88.4 R48, [R10]                                    0     
+0xb01108a90              HMMA.16816.F32.BF16 R44, R56, R46, R32                      0     
+0xb01108aa0              LDSM.16.MT88.4 R32, [R22+0x4000]                            0     
+0xb01108ab0              HMMA.16816.F32.BF16 R28, R56, R42, R28                      0     
+0xb01108ac0              LDSM.16.MT88.4 R40, [R106+0x4000]                           0     
+0xb01108ad0              HMMA.16816.F32.BF16 R52, R56, R38, R52                      0     
+0xb01108ae0              NOP                                                         0     
+0xb01108af0              HMMA.16816.F32.BF16 R56, R48, R32, R44                      0     
+0xb01108b00              LDSM.16.M88.4 R44, [R11]                                    0     
+0xb01108b10              HMMA.16816.F32.BF16 R28, R48, R24, R28                      0     
+0xb01108b20              NOP                                                         0     
+0xb01108b30              HMMA.16816.F32.BF16 R60, R48, R64, R60                      0     
+0xb01108b40              NOP                                                         0     
+0xb01108b50              HMMA.16816.F32.BF16 R52, R48, R40, R52                      0     
+0xb01108b60              NOP                                                         0     
+0xb01108b70              HMMA.16816.F32.BF16 R28, R44, R26, R28                      0     
+0xb01108b80              NOP                                                         0     
+0xb01108b90              HMMA.16816.F32.BF16 R36, R44, R66, R60                      0     
+0xb01108ba0              NOP                                                         0     
+0xb01108bb0              HMMA.16816.F32.BF16 R32, R44, R34, R56                      0     
+0xb01108bc0              NOP                                                         0     
+0xb01108bd0              HMMA.16816.F32.BF16 R24, R44, R42, R52                      0     
+0xb01108be0              NOP                                                         0     
+0xb01108bf0              IADD.64 R132, R132, 0x4                                     0     
+0xb01108c00              ISETP.NE.S64.AND P0, PT, R132, 0x40, PT                     0     
+0xb01108c10        @P0   BRA 0xb01107500                                             0     
+0xb01108c20              FSETP.GT.AND P0, PT, |R108|, 8.50705917302346158658e+37, PT 0     
+0xb01108c30              FMUL R2, R27, 0.25                                          0     
+0xb01108c40              FSETP.GEU.AND P3, PT, |R108|, 1.175494350822287508e-38, PT  0     
+0xb01108c50              FMUL R5, R108, 0.25                                         0     
+0xb01108c60              FSETP.GEU.AND P2, PT, R108, 1.175494350822287508e-38, PT    0     
+0xb01108c70              FMUL R3, R108, 8388608                                      0     
+0xb01108c80              FSEL R10, R2, R27, P0                                       0     
+0xb01108c90              FMUL R11, R26, 0.25                                         0     
+0xb01108ca0              S2R R2, SR_TID.X                                            0     
+0xb01108cb0              FSEL R5, R5, R108, P0                                       0     
+0xb01108cc0              FSEL R41, R3, R108, !P2                                     0     
+0xb01108cd0              FMUL R12, R31, 0.25                                         0     
+0xb01108ce0              FMUL R3, R30, 0.25                                          0     
+0xb01108cf0              FSEL R26, R11, R26, P0                                      0     
+0xb01108d00              FMUL R18, R39, 0.25                                         0     
+0xb01108d10        @!P3  FMUL R5, R5, 16777216                                       0     
+0xb01108d20              FSEL R14, R12, R31, P0                                      0     
+0xb01108d30              FSEL R30, R3, R30, P0                                       0     
+0xb01108d40              FMUL R12, R35, 0.25                                         0     
+0xb01108d50              FMUL R11, R34, 0.25                                         0     
+0xb01108d60              FMUL R13, R38, 0.25                                         0     
+0xb01108d70              FSETP.GEU.AND P1, PT, R4, 1.175494350822287508e-38, PT      0     
+0xb01108d80              FMUL R3, R4, 8388608                                        0     
+0xb01108d90              MUFU.RCP R5, R5                                             0     
+0xb01108da0              FSETP.GEU.AND P4, PT, |R4|, 1.175494350822287508e-38, PT    0     
+0xb01108db0              FSEL R18, R18, R39, P0                                      0     
+0xb01108dc0              FSEL R16, R12, R35, P0                                      0     
+0xb01108dd0              FSEL R34, R11, R34, P0                                      0     
+0xb01108de0              FSEL R38, R13, R38, P0                                      0     
+0xb01108df0              FSEL R39, R3, R4, !P1                                       0     
+0xb01108e00              FSETP.GT.AND P0, PT, |R4|, 8.50705917302346158658e+37, PT   0     
+0xb01108e10              FMUL R11, R4, 0.25                                          0     
+0xb01108e20              FMUL R3, R28, 0.25                                          0     
+0xb01108e30              S2UR UR5, SR_CgaCtaId                                       0     
+0xb01108e40        @!P3  FMUL R14, R14, 16777216                                     0     
+0xb01108e50              FMUL R13, R24, 0.25                                         0     
+0xb01108e60              FSEL R11, R11, R4, P0                                       0     
+0xb01108e70              FSEL R19, R3, R28, P0                                       0     
+0xb01108e80              FMUL R3, R36, 0.25                                          0     
+0xb01108e90              FMUL R4, R29, 0.25                                          0     
+0xb01108ea0              IMAD.SHL.U32 R22, R2, 0x8, RZ                               0     
+0xb01108eb0        @!P4  FMUL R11, R11, 16777216                                     0     
+0xb01108ec0              FSEL R15, R13, R24, P0                                      0     
+0xb01108ed0              FSEL R31, R3, R36, P0                                       0     
+0xb01108ee0              FMUL R13, R32, 0.25                                         0     
+0xb01108ef0              LOP3.LUT R17, R22, 0x78, RZ, 0xc0, !PT                      0     
+0xb01108f00              FMUL R20, R37, 0.25                                         0     
+0xb01108f10              FSEL R29, R4, R29, P0                                       0     
+0xb01108f20              IMAD.SHL.U32 R4, R2, 0x20, RZ                               0     
+0xb01108f30        @!P3  FMUL R16, R16, 16777216                                     0     
+0xb01108f40              IMAD R36, R0, 0x80, R17                                     0     
+0xb01108f50              FMUL R17, R5, R14                                           0     
+0xb01108f60        @!P3  FMUL R34, R34, 16777216                                     0     
+0xb01108f70              MUFU.RCP R14, R11                                           0     
+0xb01108f80              FMUL R12, R25, 0.25                                         0     
+0xb01108f90              FSEL R23, R13, R32, P0                                      0     
+0xb01108fa0              FSEL R37, R20, R37, P0                                      0     
+0xb01108fb0              LOP3.LUT R13, R2, 0x10, RZ, 0xc0, !PT                       0     
+0xb01108fc0              FMUL R20, R5, R16                                           0     
+0xb01108fd0              LOP3.LUT R4, R4, 0x180, RZ, 0xc0, !PT                       0     
+0xb01108fe0              FMUL R21, R5, R34                                           0     
+0xb01108ff0              UMOV UR4, 0x400                                             0     
+0xb01109000              FSEL R25, R12, R25, P0                                      0     
+0xb01109010              FMUL R12, R33, 0.25                                         0     
+0xb01109020              ULEA UR4, UR5, UR4, 0x18                                    0     
+0xb01109030              IMAD R28, R13, 0x20, R4                                     0     
+0xb01109040        @!P4  FMUL R15, R15, 16777216                                     0     
+0xb01109050              F2FP.BF16.F32.PACK_AB R20, R20, R21                         0     
+0xb01109060        @!P3  FMUL R10, R10, 16777216                                     0     
+0xb01109070        @!P3  FMUL R26, R26, 16777216                                     0     
+0xb01109080        @!P3  FMUL R30, R30, 16777216                                     0     
+0xb01109090        @!P3  FMUL R18, R18, 16777216                                     0     
+0xb011090a0        @!P3  FMUL R38, R38, 16777216                                     0     
+0xb011090b0              SHF.R.U32.HI R21, RZ, 0x2, R2                               0     
+0xb011090c0              FMUL R16, R14, R15                                          0     
+0xb011090d0              FSEL R33, R12, R33, P0                                      0     
+0xb011090e0              IADD3 R3, R39, -0x3f2aaaab, RZ                              0     
+0xb011090f0              FMUL R12, R5, R10                                           0     
+0xb01109100              FMUL R13, R5, R26                                           0     
+0xb01109110              FMUL R30, R5, R30                                           0     
+0xb01109120              FMUL R24, R5, R18                                           0     
+0xb01109130              FMUL R27, R5, R38                                           0     
+0xb01109140              LOP3.LUT R32, R21, 0x18, RZ, 0xc0, !PT                      0     
+0xb01109150              BAR.SYNC.DEFER_BLOCKING 0x0                                 0     
+0xb01109160              LEA.HI R15, R28, UR4, RZ, 0x1d                              0     
+0xb01109170        @!P4  FMUL R25, R25, 16777216                                     0     
+0xb01109180              SHF.R.U32.HI R10, RZ, 0x1, R2                               0     
+0xb01109190        @!P4  FMUL R29, R29, 16777216                                     0     
+0xb011091a0              IADD3 R5, R41, -0x3f2aaaab, RZ                              0     
+0xb011091b0              LOP3.LUT R3, R3, 0xff800000, RZ, 0xc0, !PT                  0     
+0xb011091c0              IMAD R15, R32, 0x2, R15                                     0     
+0xb011091d0              LOP3.LUT R35, R10, 0x38, RZ, 0xc0, !PT                      0     
+0xb011091e0        @!P4  FMUL R19, R19, 16777216                                     0     
+0xb011091f0              LOP3.LUT R10, R5, 0xff800000, RZ, 0xc0, !PT                 0     
+0xb01109200              IMAD R28, R28, 0x2, R15                                     0     
+0xb01109210              ISETP.NE.AND P0, PT, R0, RZ, PT                             0     
+0xb01109220              FSEL R0, RZ, -23, P1                                        0     
+0xb01109230              I2FP.F32.S32 R5, R3                                         0     
+0xb01109240        @!P4  FMUL R33, R33, 16777216                                     0     
+0xb01109250        @!P4  FMUL R23, R23, 16777216                                     0     
+0xb01109260        @!P4  FMUL R37, R37, 16777216                                     0     
+0xb01109270              I2FP.F32.S32 R11, R10                                       0     
+0xb01109280              IMAD.SHL.U32 R15, R2, 0x2, RZ                               0     
+0xb01109290              IADD3 R3, R39, -R3, RZ                                      0     
+0xb011092a0        @!P4  FMUL R31, R31, 16777216                                     0     
+0xb011092b0              IADD3 R10, R41, -R10, RZ                                    0     
+0xb011092c0              FSEL R4, RZ, -23, P2                                        0     
+0xb011092d0              LOP3.LUT R26, R22, 0x3f8, RZ, 0xc0, !PT                     0     
+0xb011092e0              FFMA.FTZ R0, R5, 1.1920928955078125e-07, R0                 0     
+0xb011092f0              FMUL R25, R14, R25                                          0     
+0xb01109300              FMUL R29, R14, R29                                          0     
+0xb01109310              FMUL R18, R14, R19                                          0     
+0xb01109320              FMUL R33, R14, R33                                          0     
+0xb01109330              FMUL R22, R14, R23                                          0     
+0xb01109340              FMUL R37, R14, R37                                          0     
+0xb01109350              MOV R5, 0x3e055027                                          0     
+0xb01109360              FMUL R14, R14, R31                                          0     
+0xb01109370              FADD R3, R3, -1                                             0     
+0xb01109380              LOP3.LUT R19, R15, 0x6, RZ, 0xc0, !PT                       0     
+0xb01109390              FADD R10, R10, -1                                           0     
+0xb011093a0              FFMA.FTZ R11, R11, 1.1920928955078125e-07, R4               0     
+0xb011093b0              FFMA.FTZ R4, R3, -R5, 0.14084610342979431152                0     
+0xb011093c0              F2FP.BF16.F32.PACK_AB R14, R37, R14                         0     
+0xb011093d0              FFMA.FTZ R5, R10, -R5, 0.14084610342979431152               0     
+0xb011093e0              F2FP.BF16.F32.PACK_AB R22, R33, R22                         0     
+0xb011093f0              IMAD R19, R19, 0x2, R28                                     0     
+0xb01109400              F2FP.BF16.F32.PACK_AB R18, R29, R18                         0     
+0xb01109410              FFMA.FTZ R4, R3, R4, -0.12148627638816833496                0     
+0xb01109420              F2FP.BF16.F32.PACK_AB R17, R17, R30                         0     
+0xb01109430              FFMA.FTZ R5, R10, R5, -0.12148627638816833496               0     
+0xb01109440              F2FP.BF16.F32.PACK_AB R16, R25, R16                         0     
+0xb01109450              LDC.64 R30, c[0x0][0x398]                                   0     
+0xb01109460              STS [R19], R14                                              0     
+0xb01109470              FFMA.FTZ R4, R3, R4, 0.13980610668659210205                 0     
+0xb01109480              FFMA.FTZ R5, R10, R5, 0.13980610668659210205                0     
+0xb01109490              LEA R35, R35, UR4, 0x1                                      0     
+0xb011094a0              STS [R19+0x40], R22                                         0     
+0xb011094b0              FFMA.FTZ R4, R3, R4, -0.16684235632419586182                0     
+0xb011094c0              FFMA.FTZ R5, R10, R5, -0.16684235632419586182               0     
+0xb011094d0              F2FP.BF16.F32.PACK_AB R15, R12, R13                         0     
+0xb011094e0              STS [R19+0x80], R18                                         0     
+0xb011094f0              FFMA.FTZ R4, R3, R4, 0.20012299716472625732                 0     
+0xb01109500              FFMA.FTZ R5, R10, R5, 0.20012299716472625732                0     
+0xb01109510              SHF.R.S32.HI R28, RZ, 0x1f, R125                            0     
+0xb01109520              STS [R19+0xc0], R16                                         0     
+0xb01109530              FFMA.FTZ R4, R3, R4, -0.24999669194221496582                0     
+0xb01109540              FFMA.FTZ R5, R10, R5, -0.24999669194221496582               0     
+0xb01109550              IMAD R26, R26, 0x2, R35                                     0     
+0xb01109560              BAR.SYNC.DEFER_BLOCKING 0x0                                 0     
+0xb01109570              FFMA.FTZ R4, R3, R4, 0.33333182334899902344                 0     
+0xb01109580              FFMA.FTZ R5, R10, R5, 0.33333182334899902344                0     
+0xb01109590              ISETP.GE.U32.AND P3, PT, R41, 0x7f800000, PT                0     
+0xb011095a0              ISETP.GE.U32.AND P2, PT, R39, 0x7f800000, PT                0     
+0xb011095b0              FFMA.FTZ R4, R3, R4, -0.5                                   0     
+0xb011095c0              FFMA.FTZ R5, R10, R5, -0.5                                  0     
+0xb011095d0              LEA R12, P4, R125, R30, 0x1                                 0     
+0xb011095e0              FMUL R4, R3, R4                                             0     
+0xb011095f0              FMUL R5, R10, R5                                            0     
+0xb01109600              LEA.HI.X R125, R125, R31, R28, 0x1, P4                      0     
+0xb01109610              FFMA.FTZ R3, R3, R4, R3                                     0     
+0xb01109620              FFMA.FTZ R10, R10, R5, R10                                  0     
+0xb01109630              F2FP.BF16.F32.PACK_AB R24, R24, R27                         0     
+0xb01109640              FFMA.FTZ R0, R0, 0.69314718246459960938, R3                 0     
+0xb01109650              FFMA.FTZ R3, R11, 0.69314718246459960938, R10               0     
+0xb01109660        @P3   MOV R10, 0x7f800000                                         0     
+0xb01109670        @P2   MOV R4, 0x7f800000                                          0     
+0xb01109680              SHF.R.U32.HI R5, RZ, 0x1f, R36                              0     
+0xb01109690              FSETP.NEU.AND P1, PT, R39, RZ, PT                           0     
+0xb011096a0              LDS.128 R28, [R26]                                          0     
+0xb011096b0        @P3   FFMA.FTZ R3, R41, R10, +INF                                 0     
+0xb011096c0              BAR.SYNC.DEFER_BLOCKING 0x0                                 0     
+0xb011096d0              LEA R10, P3, R7, R12, 0x1                                   0     
+0xb011096e0        @P2   FFMA.FTZ R0, R39, R4, +INF                                  0     
+0xb011096f0              LEA R12, P4, R9, R12, 0x1                                   0     
+0xb01109700              IMAD.SHL.U32 R4, R36, 0x2, RZ                               0     
+0xb01109710              LEA.HI.X R11, R7, R125, R6, 0x1, P3                         0     
+0xb01109720              LEA.HI.X R13, R9, R125, R8, 0x1, P4                         0     
+0xb01109730              FSETP.NEU.AND P2, PT, R41, RZ, PT                           0     
+0xb01109740              IADD.64 R6, R4, R10                                         0     
+0xb01109750              IADD.64 R4, R4, R12                                         0     
+0xb01109760              FSEL R9, R0, -INF , P1                                      0     
+0xb01109770              LOP3.LUT R8, R21, 0x7, RZ, 0xc0, !PT                        0     
+0xb01109780              FSEL R3, R3, -INF , P2                                      0     
+0xb01109790              STS [R19], R24                                              0     
+0xb011097a0              STS [R19+0x40], R20                                         0     
+0xb011097b0              STS [R19+0x80], R17                                         0     
+0xb011097c0              STS [R19+0xc0], R15                                         0     
+0xb011097d0              BAR.SYNC.DEFER_BLOCKING 0x0                                 0     
+0xb011097e0        @P0   BRA 0xb01109820                                             0     
+0xb011097f0              LDS.128 R24, [R26]                                          0     
+0xb01109800              STG.E.128 desc[UR8][R6.64], R28                             0     
+0xb01109810              STG.E.128 desc[UR8][R4.64], R24                             0     
+0xb01109820              BAR.SYNC.DEFER_BLOCKING 0x0                                 0     
+0xb01109830              LEA R8, R8, UR4, 0x2                                        0     
+0xb01109840              FADD R9, R130, R9                                           0     
+0xb01109850              FADD R3, R128, R3                                           0     
+0xb01109860              LOP3.LUT P0, RZ, R2, 0x70, RZ, 0xc0, !PT                    0     
+0xb01109870              LDC.64 R4, c[0x0][0x3a0]                                    104   
+0xb01109880              LOP3.LUT R7, R2, 0xf, RZ, 0xc0, !PT                         0     
+0xb01109890              LEA R0, R7, UR4, 0x2                                        0     
+0xb011098a0              STS [R8], R9                                                0     
+0xb011098b0              STS [R8+0x20], R3                                           0     
+0xb011098c0              BAR.SYNC.DEFER_BLOCKING 0x0                                 0     
+0xb011098d0        @P0   EXIT                                                        0     
+0xb011098e0              LDS R9, [R0]                                                0     
+0xb011098f0              IMAD.SHL.U32 R2, R127, 0x4, RZ                              0     
+0xb01109900              MOV R3, RZ                                                  0     
+0xb01109910              IMAD.WIDE R126, R126, 0x4, R4                               0     
+0xb01109920              IADD.64 R126, R126, R2                                      0     
+0xb01109930              IMAD.WIDE.U32 R126, R7, 0x4, R126                           0     
+0xb01109940              STG.E desc[UR8][R126.64], R9                                0     
+0xb01109950              EXIT                                                        0     
+0xb01109960              BRA 0xb01109960                                             0     
+0xb01109970              NOP                                                         0     
+0xb01109980              NOP                                                         0     
+0xb01109990              NOP                                                         0     
+0xb011099a0              NOP                                                         0     
+0xb011099b0              NOP                                                         0     
+0xb011099c0              NOP                                                         0     
+0xb011099d0              NOP                                                         0     
+0xb011099e0              NOP                                                         0     
+0xb011099f0              NOP                                                         0     

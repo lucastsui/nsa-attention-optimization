@@ -1,0 +1,8 @@
+==WARNING== Note: Running with uncontrolled GPU caches. Profiling results may be inconsistent.
+==WARNING== Note: Running with unmodified GPU clocks. If not controlled otherwise, profiling results may be inconsistent.
+==PROF== Connected to process 394 (/usr/bin/python3.12)
+==PROF== Profiling "parallel_nsa_fwd_kernel" - 0 (1/1): 0%....50%....100% - 19 passes
+==PROF== Connected to process 448 (/usr/bin/python3.12)
+==PROF== Disconnected from process 448
+==PROF== Disconnected from process 394
+==PROF== Report: /mnt/c/Users/Owner/Documents/Codex/2026-09-19/fe/outputs/nsa-lab/results/profiling/fla_8k_random_counters.ncu-rep
