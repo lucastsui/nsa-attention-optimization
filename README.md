@@ -246,7 +246,6 @@ bash bootstrap_baselines.sh
 bash reproduce.sh my_run
 ```
 
-The repository is private, so cloning requires an authorized GitHub account.
 Bootstrap pins dependencies and source revisions; runtime files live in ignored
 `.runtime/`, or the directory named by `NSA_RUNTIME_DIR`. Reproduction runs the
 analytic reference tests, validates all 33 expanded cases against three providers,
